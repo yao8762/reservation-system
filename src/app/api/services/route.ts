@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     const data = await res.json()
     revalidatePath('/')
     revalidatePath('/book')
-    revalidateTag('services')
+    revalidateTag('services', 'max')
     return NextResponse.json(data, { status: 201 })
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 })

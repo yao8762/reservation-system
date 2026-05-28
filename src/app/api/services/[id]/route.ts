@@ -30,7 +30,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (!res.ok) return NextResponse.json({ error: 'Update failed' }, { status: 500 })
     revalidatePath('/')
     revalidatePath('/book')
-    revalidateTag('services')
+    revalidateTag('services', 'max')
     return NextResponse.json({ ok: true })
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 })
@@ -47,7 +47,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     if (!res.ok) return NextResponse.json({ error: 'Delete failed' }, { status: 500 })
     revalidatePath('/')
     revalidatePath('/book')
-    revalidateTag('services')
+    revalidateTag('services', 'max')
     return NextResponse.json({ ok: true })
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 })
