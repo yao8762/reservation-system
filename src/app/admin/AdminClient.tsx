@@ -1304,14 +1304,14 @@ function ServicesTab({
   const [editId, setEditId] = useState("")
   const [formName, setFormName] = useState("")
   const [formPrice, setFormPrice] = useState("")
-  const [formDuration, setFormDuration] = useState("")
+  const [formDuration, setFormDuration] = useState("60")
   const [saving, setSaving] = useState(false)
 
   function openAdd() {
     setEditId("")
     setFormName("")
     setFormPrice("")
-    setFormDuration("")
+    setFormDuration("60")
     setShowModal(true)
   }
   function openEdit(s: Service) {
@@ -1439,14 +1439,17 @@ function ServicesTab({
                 </div>
                 <div className="flex-1">
                   <label className="block text-sm font-bold mb-1">時長 (分鐘)</label>
-                  <input
-                    type="number"
+                  <select
                     value={formDuration}
                     onChange={(e) => setFormDuration(e.target.value)}
-                    placeholder="90"
                     className="w-full border rounded-lg px-3 py-2"
                     required
-                  />
+                  >
+                    <option value="30">30 分鐘</option>
+                    <option value="60">60 分鐘</option>
+                    <option value="90">90 分鐘</option>
+                    <option value="120">120 分鐘</option>
+                  </select>
                 </div>
               </div>
               <div className="flex gap-2 pt-2">
@@ -1495,8 +1498,6 @@ function BlacklistTab({
 
   const [blacklist, setBlacklist] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [addingId, setAddingId] = useState("");
-  const [addingNote, setAddingNote] = useState("");
 
   useEffect(() => {
     fetchBlacklist();
@@ -1544,8 +1545,6 @@ function BlacklistTab({
         }),
       },
     );
-    setAddingId("");
-    setAddingNote("");
     fetchBlacklist();
   }
 
@@ -1577,15 +1576,6 @@ function BlacklistTab({
     <div>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-bold text-primary">👥 客戶管理</h2>
-        <button
-          onClick={() => {
-            setAddingId("");
-            setAddingNote("");
-          }}
-          className="bg-red-500 text-white px-4 py-2 rounded-lg font-bold hover:bg-red-600 text-sm"
-        >
-          ✚ 手動封鎖客戶
-        </button>
       </div>
 
       {/* 黑名單 */}
@@ -1687,40 +1677,6 @@ function BlacklistTab({
         </div>
       )}
 
-      {/* 手動封鎖 */}
-      {addingId !== undefined && (
-        <div className="bg-white rounded-xl p-4 shadow border mt-4">
-          <h4 className="font-bold text-primary mb-3">✚ 手動封鎖客戶</h4>
-          <div className="flex gap-3">
-            <input
-              type="text"
-              value={addingId}
-              onChange={(e) => setAddingId(e.target.value)}
-              placeholder="Telegram ID"
-              className="flex-1 border rounded-lg px-3 py-2 text-sm"
-            />
-            <input
-              type="text"
-              value={addingNote}
-              onChange={(e) => setAddingNote(e.target.value)}
-              placeholder="原因（選填）"
-              className="flex-1 border rounded-lg px-3 py-2 text-sm"
-            />
-            <button
-              onClick={() => addingId && addToBlacklist(addingId, addingNote)}
-              className="bg-red-500 text-white px-4 py-2 rounded-lg font-bold hover:bg-red-600"
-            >
-              封鎖
-            </button>
-            <button
-              onClick={() => setAddingId("")}
-              className="bg-gray-200 text-gray-600 px-4 py-2 rounded-lg font-bold hover:bg-gray-300"
-            >
-              取消
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
