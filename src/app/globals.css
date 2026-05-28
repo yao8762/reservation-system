@@ -1,12 +1,23 @@
 @import "tailwindcss";
 
+/* 顏色主題：預設值（可透過 .env 中的 NEXT_PUBLIC_COLOR_* 覆寫） */
 :root {
-  --color-primary: #8B7355;      /* 暖棕色 */
-  --color-secondary: #C4A77D;    /* 淺駝色 */
-  --color-accent: #E8D5B7;      /* 奶昔米 */
-  --color-background: #FDF8F3;  /* 暖白 */
-  --color-text: #4A4039;        /* 深棕文字 */
-  --color-success: #7D9B76;     /* 草地綠 */
+  --color-primary: var(--env-primary, #8B7355);
+  --color-secondary: var(--env-secondary, #C4A77D);
+  --color-accent: var(--env-accent, #E8D5B7);
+  --color-background: var(--env-background, #FDF8F3);
+  --color-text: var(--env-text, #4A4039);
+  --color-success: var(--env-success, #7D9B76);
+}
+
+/* 確保 Tailwind 的 theme.extend.colors 可以吃到這些 */
+:root {
+  --color-primary: #8B7355;
+  --color-secondary: #C4A77D;
+  --color-accent: #E8D5B7;
+  --color-background: #FDF8F3;
+  --color-text: #4A4039;
+  --color-success: #7D9B76;
 }
 
 body {

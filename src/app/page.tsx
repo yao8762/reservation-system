@@ -1,13 +1,15 @@
 import Link from 'next/link'
 
 export default function HomePage() {
+  const businessName = process.env.NEXT_PUBLIC_BUSINESS_NAME || '🌿 身心靈預約'
+  const businessDesc = process.env.NEXT_PUBLIC_BUSINESS_DESC || '專業按摩・美容服務'
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="bg-primary text-white py-6 px-4 shadow-lg">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-2xl font-bold">🌿 身心靈預約</h1>
-          <p className="text-accent text-sm mt-1">專業按摩・美容服務</p>
+          <h1 className="text-2xl font-bold">{businessName}</h1>
+          <p className="text-accent text-sm mt-1">{businessDesc}</p>
         </div>
       </header>
 

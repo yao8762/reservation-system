@@ -45,14 +45,22 @@ export interface TimeSlot {
   available: boolean
 }
 
+// 班表時段：讀取環境變數，若未設定則用預設值
+const SHIFT_MORNING_START = process.env.NEXT_PUBLIC_SHIFT_MORNING_START || '06:00'
+const SHIFT_MORNING_END = process.env.NEXT_PUBLIC_SHIFT_MORNING_END || '14:00'
+const SHIFT_AFTERNOON_START = process.env.NEXT_PUBLIC_SHIFT_AFTERNOON_START || '14:00'
+const SHIFT_AFTERNOON_END = process.env.NEXT_PUBLIC_SHIFT_AFTERNOON_END || '22:00'
+const SHIFT_NIGHT_START = process.env.NEXT_PUBLIC_SHIFT_NIGHT_START || '22:00'
+const SHIFT_NIGHT_END = process.env.NEXT_PUBLIC_SHIFT_NIGHT_END || '06:00'
+
 export const SHIFT_LABELS = {
-  morning: '早班 (06:00-14:00)',
-  afternoon: '中班 (14:00-22:00)',
-  night: '晚班 (22:00-06:00)'
+  morning: `早班 (${SHIFT_MORNING_START}-${SHIFT_MORNING_END})`,
+  afternoon: `中班 (${SHIFT_AFTERNOON_START}-${SHIFT_AFTERNOON_END})`,
+  night: `晚班 (${SHIFT_NIGHT_START}-${SHIFT_NIGHT_END})`
 }
 
 export const SHIFT_TIMES = {
-  morning: { start: '06:00', end: '14:00' },
-  afternoon: { start: '14:00', end: '22:00' },
-  night: { start: '22:00', end: '06:00' }
+  morning: { start: SHIFT_MORNING_START, end: SHIFT_MORNING_END },
+  afternoon: { start: SHIFT_AFTERNOON_START, end: SHIFT_AFTERNOON_END },
+  night: { start: SHIFT_NIGHT_START, end: SHIFT_NIGHT_END }
 }
