@@ -1,10 +1,10 @@
 -- ============================================
 -- 按摩/美容預約系統 - Supabase Schema
--- Version: 1.0
+-- Version: 2.0 (2026-05-26)
 -- ============================================
 
 -- 技師表
-CREATE TABLE technicians (
+CREATE TABLE IF NOT EXISTS technicians (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   nickname TEXT NOT NULL UNIQUE,
@@ -15,7 +15,7 @@ CREATE TABLE technicians (
 );
 
 -- 服務項目表
-CREATE TABLE services (
+CREATE TABLE IF NOT EXISTS services (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   duration_minutes INTEGER NOT NULL,
@@ -24,162 +24,103 @@ CREATE TABLE services (
 );
 
 -- 班表表
-CREATE TABLE shifts (
+-- date = 這天是「服務日」，代表凌晨時段屬於這天
+-- 例：date=2026-05-27 的 night shift = 2026-05-27 22:00 ~ 2026-05-28 06:00，涵蓋 05-28 00:00-02:00
+-- end_date = 班表實際結束日期（跨日班時為 date + 1 天，一般班同 date）
+CREATE TABLE IF NOT EXISTS shifts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   technician_id UUID NOT NULL REFERENCES technicians(id) ON DELETE CASCADE,
-  shift_type TEXT NOT NULL CHECK (shift_type IN ('morning', 'afternoon', 'night')),
   start_time TIME NOT NULL,
   end_time TIME NOT NULL,
   date DATE NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(technician_id, date, shift_type)
+  end_date DATE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- 預約表
-CREATE TABLE appointments (
+CREATE TABLE IF NOT EXISTS appointments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   technician_id UUID NOT NULL REFERENCES technicians(id) ON DELETE CASCADE,
   service_id UUID NOT NULL REFERENCES services(id),
   client_nickname TEXT NOT NULL,
   client_phone TEXT NOT NULL,
-  date DATE NOT NULL,
-  start_time TIME NOT NULL,
-  end_time TIME NOT NULL,
+  date DATE NOT NULL,                          -- 服務發生的日曆日（用於夜班的「服務日」邏輯）
+  start_time TIME NOT NULL,                   -- 服務開始時間（可能是 00:00 表示凌晨）
+  end_time TIME NOT NULL,                      -- 服務結束時間（slotStart + serviceDuration）
   status TEXT DEFAULT 'confirmed' CHECK (status IN ('confirmed', 'cancelled', 'completed')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  telegram_id TEXT                              -- Telegram 用戶 ID（可為 NULL）
+);
+
+-- ============================================
+-- 登入驗證碼資料表
+-- ============================================
+CREATE TABLE IF NOT EXISTS login_codes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  code TEXT NOT NULL,
+  phone TEXT NOT NULL,                         -- 實際存 first_name
+  telegram_id TEXT,
+  verified BOOLEAN DEFAULT FALSE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS login_codes_code_idx ON login_codes(code);
+CREATE INDEX IF NOT EXISTS login_codes_phone_idx ON login_codes(phone);
+CREATE INDEX IF NOT EXISTS login_codes_expires_at ON login_codes(expires_at);
+
+-- ============================================
+-- Telegram 用戶（白名單/黑名單）
+-- ============================================
+CREATE TABLE IF NOT EXISTS telegram_users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  telegram_id TEXT UNIQUE NOT NULL,
+  first_name TEXT,
+  is_whitelisted BOOLEAN DEFAULT FALSE,
+  is_blacklisted BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ============================================
--- 初始資料
--- ============================================
-
--- 插入服務項目
-INSERT INTO services (name, duration_minutes, price) VALUES
-  ('輕紆壓按摩', 60, 800),
-  ('深層組織按摩', 90, 1200),
-  ('全身舒壓按摩', 120, 1600);
-
--- 插入技師
-INSERT INTO technicians (name, nickname, specialty) VALUES
-  ('王小美', '小美', '深層組織按摩'),
-  ('林志傑', '阿傑', '輕壓舒緩'),
-  ('張雅文', '雅文', '全身舒壓'),
-  ('黃大雄', '大雄', '運動按摩'),
-  ('陳琳琳', '琳琳', '臉部美容');
-
--- 插入測試班表（未來7天，每天3班）
-DO $$
-DECLARE
-  tech_record RECORD;
-  day_offset INTEGER;
-  shift_types TEXT[] := ARRAY['morning', 'afternoon', 'night'];
-  shift_times TEXT[][] := ARRAY[
-    ['06:00', '14:00'],
-    ['14:00', '22:00'],
-    ['22:00', '06:00']
-  ];
-BEGIN
-  FOR tech_record IN SELECT id FROM technicians LOOP
-    FOR day_offset IN 0..6 LOOP
-      INSERT INTO shifts (technician_id, shift_type, start_time, end_time, date)
-      VALUES
-        (tech_record.id, 'morning', '06:00'::TIME, '14:00'::TIME, CURRENT_DATE + day_offset),
-        (tech_record.id, 'afternoon', '14:00'::TIME, '22:00'::TIME, CURRENT_DATE + day_offset),
-        (tech_record.id, 'night', '22:00'::TIME, '06:00'::TIME, CURRENT_DATE + day_offset);
-    END LOOP;
-  END LOOP;
-END $$;
+CREATE INDEX IF NOT EXISTS telegram_users_telegram_id_idx ON telegram_users(telegram_id);
 
 -- ============================================
 -- RLS 政策（Row Level Security）
 -- ============================================
-
--- 啟用 RLS
 ALTER TABLE technicians ENABLE ROW LEVEL SECURITY;
 ALTER TABLE services ENABLE ROW LEVEL SECURITY;
 ALTER TABLE shifts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE login_codes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE telegram_users ENABLE ROW LEVEL SECURITY;
 
--- 技師：可以讀取自己的資料
-CREATE POLICY "Technicians can view own data" ON technicians
-  FOR SELECT USING (true);
+-- 技師/服務/班表：公開讀取
+CREATE POLICY "technicians_read" ON technicians FOR SELECT USING (true);
+CREATE POLICY "services_read" ON services FOR SELECT USING (true);
+CREATE POLICY "shifts_read" ON shifts FOR SELECT USING (true);
 
--- 服務：所有人可讀
-CREATE POLICY "Services are public readable" ON services
-  FOR SELECT USING (true);
+-- 預約：公開新增（準系統保安，取決於前端簡單驗證）
+CREATE POLICY "appointments_insert" ON appointments FOR INSERT WITH CHECK (true);
+CREATE POLICY "appointments_read" ON appointments FOR SELECT USING (true);
 
--- 班表：所有人可讀
-CREATE POLICY "Shifts are public readable" ON shifts
-  FOR SELECT USING (true);
-
--- 預約：所有人可新增（不需要登入也能預約）
-CREATE POLICY "Appointments are public insertable" ON appointments
-  FOR INSERT WITH CHECK (true);
-
--- ============================================
--- View：用於計算時段可用性
--- ============================================
-
-CREATE VIEW available_slots AS
-SELECT
-  s.technician_id,
-  s.date,
-  s.shift_type,
-  s.start_time,
-  s.end_time,
-  s.id as shift_id,
-  t.nickname as technician_nickname,
-  -- 計算該技師在這班的所有已預約時段
-  COALESCE(
-    (SELECT json_agg(json_build_array(a.start_time, a.end_time))
-     FROM appointments a
-     WHERE a.technician_id = s.technician_id
-       AND a.date = s.date
-       AND a.status = 'confirmed'),
-    '[]'
-  ) as booked_times
-FROM shifts s
-JOIN technicians t ON t.id = s.technician_id
-WHERE s.date >= CURRENT_DATE;
+-- login_codes / telegram_users：公開讀寫（Bot webhook 寫入，前端讀取驗證）
+CREATE POLICY "login_codes_all" ON login_codes FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "telegram_users_all" ON telegram_users FOR ALL USING (true) WITH CHECK (true);
 
 -- ============================================
--- 函數：用於檢查時段是否可用
+-- 自動清理：刪除 10 分鐘前的舊登入碼
 -- ============================================
-
-CREATE OR REPLACE FUNCTION is_slot_available(
-  p_technician_id UUID,
-  p_date DATE,
-  p_start_time TIME,
-  p_end_time TIME,
-  p_service_id UUID
-) RETURNS BOOLEAN AS $$
-DECLARE
-  duration INTEGER;
-  conflict_count INTEGER;
+CREATE OR REPLACE FUNCTION cleanup_expired_login_codes()
+RETURNS void AS $$
 BEGIN
-  -- 取得服務時長
-  SELECT duration_minutes INTO duration FROM services WHERE id = p_service_id;
-  
-  -- 檢查是否有衝突（同一技師、同一天、重疊時段）
-  SELECT COUNT(*) INTO conflict_count
-  FROM appointments a
-  WHERE a.technician_id = p_technician_id
-    AND a.date = p_date
-    AND a.status = 'confirmed'
-    AND (
-      -- 新時段與現有時段重疊
-      (p_start_time < a.end_time AND p_end_time > a.start_time)
-    );
-  
-  RETURN conflict_count = 0;
+  DELETE FROM login_codes WHERE expires_at < NOW() - INTERVAL '10 minutes';
 END;
 $$ LANGUAGE plpgsql;
 
 -- ============================================
 -- 觸發器：更新 updated_at
 -- ============================================
-
 CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -189,9 +130,47 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER tr_technicians_updated_at
-  BEFORE UPDATE ON technicians
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  BEFORE UPDATE ON technicians FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 CREATE TRIGGER tr_appointments_updated_at
-  BEFORE UPDATE ON appointments
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  BEFORE UPDATE ON appointments FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER tr_telegram_users_updated_at
+  BEFORE UPDATE ON telegram_users FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ============================================
+-- 初始資料（如果還沒有任何技師）
+-- ============================================
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM technicians LIMIT 1) THEN
+    INSERT INTO services (name, duration_minutes, price) VALUES
+      ('輕紆壓按摩', 60, 800),
+      ('深層組織按摩', 90, 1200),
+      ('全身舒壓按摩', 120, 1600);
+
+    INSERT INTO technicians (name, nickname, specialty) VALUES
+      ('王小美', '小美', '深層組織按摩'),
+      ('林志傑', '阿傑', '輕壓舒緩'),
+      ('張雅文', '雅文', '全身舒壓'),
+      ('黃大雄', '大雄', '運動按摩'),
+      ('陳琳琳', '琳琳', '臉部美容');
+
+    -- 插入未來 7 天班表（每天 3 班）
+    INSERT INTO shifts (technician_id, start_time, end_time, date, end_date)
+    SELECT
+      t.id,
+      s.start_time,
+      s.end_time,
+      d.d::DATE,
+      CASE WHEN s.start_time > s.end_time THEN d.d::DATE + 1 ELSE d.d::DATE END
+    FROM technicians t
+    CROSS JOIN (VALUES
+      ('06:00'::TIME, '14:00'::TIME),
+      ('14:00'::TIME, '22:00'::TIME),
+      ('22:00'::TIME, '06:00'::TIME)
+    ) AS s(start_time, end_time)
+    CROSS JOIN generate_series(CURRENT_DATE, CURRENT_DATE + INTERVAL '6 days', '1 day') AS d(d)
+    ON CONFLICT (technician_id, date) DO NOTHING;
+  END IF;
+END $$;

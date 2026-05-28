@@ -20,6 +20,7 @@ export interface Shift {
   start_time: string
   end_time: string
   date: string
+  end_date?: string
 }
 
 export interface Appointment {

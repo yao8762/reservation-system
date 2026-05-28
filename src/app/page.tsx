@@ -20,7 +20,7 @@ export default function HomePage() {
           選擇專業技師，享受身心靈的呵護
         </p>
         
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-2 gap-4">
           <Link
             href="/book"
             className="block bg-primary text-white rounded-xl p-6 hover:shadow-lg transition-all hover:-translate-y-1"
@@ -31,19 +31,10 @@ export default function HomePage() {
           </Link>
           
           <Link
-            href="/admin"
-            className="block bg-secondary text-white rounded-xl p-6 hover:shadow-lg transition-all hover:-translate-y-1"
-          >
-            <span className="text-3xl mb-2 block">⚙️</span>
-            <span className="font-bold">管理員後台</span>
-            <span className="block text-sm text-background mt-1">管理預約與班表</span>
-          </Link>
-          
-          <Link
             href="/technicians"
             className="block bg-accent text-primary rounded-xl p-6 hover:shadow-lg transition-all hover:-translate-y-1"
           >
-            <span className="text-3xl mb-2 block">👤</span>
+            <span className="text-3xl mb-2 block">👥</span>
             <span className="font-bold">技師列表</span>
             <span className="block text-sm text-primary mt-1">認識我們的團隊</span>
           </Link>
@@ -74,7 +65,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="bg-primary text-white text-center py-4 mt-8">
-        <p className="text-sm">24小時服務 ・ 全年無休</p>
+        <p className="text-sm">24小時服務 ・ 全年不休</p>
       </footer>
     </div>
   )
