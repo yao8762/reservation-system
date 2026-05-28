@@ -1,8 +1,13 @@
 import Link from 'next/link'
+import { getServicesCached } from '@/lib/cache'
 
-export default function HomePage() {
+export default async function HomePage() {
   const businessName = process.env.NEXT_PUBLIC_BUSINESS_NAME || '🌿 身心靈預約'
   const businessDesc = process.env.NEXT_PUBLIC_BUSINESS_DESC || '專業按摩・美容服務'
+  const services = await getServicesCached()
+
+  const borderColors = ['border-primary', 'border-secondary', 'border-accent', 'border-primary', 'border-secondary', 'border-accent']
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -47,21 +52,13 @@ export default function HomePage() {
       <div className="max-w-4xl mx-auto px-4 py-8">
         <h3 className="text-xl font-bold text-primary mb-4">我們的服務</h3>
         <div className="grid md:grid-cols-3 gap-4">
-          <div className="bg-white rounded-xl p-4 shadow border-l-4 border-primary">
-            <h4 className="font-bold text-primary">輕紆壓按摩</h4>
-            <p className="text-sm text-gray-500">60 分鐘</p>
-            <p className="text-lg font-bold text-primary mt-2">$800</p>
-          </div>
-          <div className="bg-white rounded-xl p-4 shadow border-l-4 border-secondary">
-            <h4 className="font-bold text-secondary">深層組織按摩</h4>
-            <p className="text-sm text-gray-500">90 分鐘</p>
-            <p className="text-lg font-bold text-secondary mt-2">$1,200</p>
-          </div>
-          <div className="bg-white rounded-xl p-4 shadow border-l-4 border-accent">
-            <h4 className="font-bold text-primary">全身舒壓按摩</h4>
-            <p className="text-sm text-gray-500">120 分鐘</p>
-            <p className="text-lg font-bold text-primary mt-2">$1,600</p>
-          </div>
+          {services.map((service, i) => (
+            <div key={service.id} className={`bg-white rounded-xl p-4 shadow border-l-4 ${borderColors[i % borderColors.length]}`}>
+              <h4 className="font-bold text-primary">{service.name}</h4>
+              <p className="text-sm text-gray-500">{service.duration_minutes} 分鐘</p>
+              <p className="text-lg font-bold text-primary mt-2">${service.price.toLocaleString()}</p>
+            </div>
+          ))}
         </div>
       </div>
 
