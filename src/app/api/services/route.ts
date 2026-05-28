@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath, revalidateTag } from 'next/cache'
 
 const SUPABASE_URL = 'https://msfnakrwhggvbrotvbfq.supabase.co'
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_lOy6FWvc2E0I4IGDkv8f8g_2hUn-eOd'
@@ -37,6 +38,9 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({ name, price: Number(price), duration_minutes: Number(duration_minutes) }),
     })
     const data = await res.json()
+    revalidatePath('/')
+    revalidatePath('/book')
+    revalidateTag('services')
     return NextResponse.json(data, { status: 201 })
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 })

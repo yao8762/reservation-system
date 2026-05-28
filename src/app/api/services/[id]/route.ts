@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath, revalidateTag } from 'next/cache'
 
 const SUPABASE_URL = 'https://msfnakrwhggvbrotvbfq.supabase.co'
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_lOy6FWvc2E0I4IGDkv8f8g_2hUn-eOd'
@@ -27,6 +28,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       body: JSON.stringify(update),
     })
     if (!res.ok) return NextResponse.json({ error: 'Update failed' }, { status: 500 })
+    revalidatePath('/')
+    revalidatePath('/book')
+    revalidateTag('services')
     return NextResponse.json({ ok: true })
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 })
@@ -38,9 +42,12 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/services?id=eq.${id}`, {
       method: 'DELETE',
-      headers: { ...headers() },
+      headers: headers(),
     })
     if (!res.ok) return NextResponse.json({ error: 'Delete failed' }, { status: 500 })
+    revalidatePath('/')
+    revalidatePath('/book')
+    revalidateTag('services')
     return NextResponse.json({ ok: true })
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 })
