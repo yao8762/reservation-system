@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const KEY = 'sb_publishable_lOy6FWvc2E0I4IGDkv8f8g_2hUn-eOd'
-const LOGIN_CODES_URL = 'https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/login_codes'
-const TG_USERS_URL = 'https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/telegram_users'
+const KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+const LOGIN_CODES_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/login_codes`
+const TG_USERS_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/telegram_users`
 const HEADERS = { 'apikey': KEY, 'Authorization': `Bearer ${KEY}`, 'Content-Type': 'application/json' }
 
 // ============================================================
@@ -38,17 +38,17 @@ export async function GET(req: NextRequest) {
     method: 'PATCH',
     headers: HEADERS,
     body: JSON.stringify({ verified: true })
-  }).catch(() => {})
+  }).catch((e) => console.error('Failed to mark token used:', e))
 
   // Upsert 白名單
   await fetch(TG_USERS_URL, {
     method: 'POST', headers: HEADERS,
     body: JSON.stringify({ telegram_id, is_whitelisted: true, is_blacklisted: false })
-  }).catch(() => {})
+  }).catch((e) => console.error('Failed to upsert tg user:', e))
   await fetch(`${TG_USERS_URL}?telegram_id=eq.${telegram_id}`, {
     method: 'PATCH', headers: HEADERS,
     body: JSON.stringify({ is_whitelisted: true, is_blacklisted: false })
-  }).catch(() => {})
+  }).catch((e) => console.error('Failed to patch tg user:', e))
 
   return NextResponse.json({ ok: true, telegram_id, first_name })
 }

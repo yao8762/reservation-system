@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const BOT_TOKEN = '8875060146:AAERHZKxxXvlhWtAJCqVK-hrFB8WNP5xK_A'
-const ADMIN_ID = '1974531415'
-const KEY = 'sb_publishable_lOy6FWvc2E0I4IGDkv8f8g_2hUn-eOd'
-const SITE_URL = 'https://reservation-system-silk.vercel.app'
-const LOGIN_CODES_URL = 'https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/login_codes'
-const TG_USERS_URL = 'https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/telegram_users'
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || ''
+const ADMIN_ID = process.env.TELEGRAM_ADMIN_ID || '1974531415'
+const KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://reservation-system-silk.vercel.app'
+const LOGIN_CODES_URL = `${SUPABASE_URL}/rest/v1/login_codes`
+const TG_USERS_URL = `${SUPABASE_URL}/rest/v1/telegram_users`
 const HEADERS = { 'apikey': KEY, 'Authorization': `Bearer ${KEY}`, 'Content-Type': 'application/json' }
 
 function generateToken(): string {
@@ -21,6 +22,12 @@ function generateToken(): string {
 // POST /api/auth/webhook — Bot 收到用戶訊息時的處理
 // ============================================================
 export async function POST(req: NextRequest) {
+  // Telegram secret token 驗證（防止假冒）
+  const secret = req.headers.get('x-telegram-bot-api-secret-token')
+  if (secret !== process.env.TELEGRAM_SECRET) {
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+  }
+
   try {
     const body = await req.json()
     const { message } = body

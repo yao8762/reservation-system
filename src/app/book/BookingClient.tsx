@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { apiFetch, apiFetchAllSafe } from "@/lib/api";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-const BOT_USERNAME = "Reservation_sej_bot";
-const BOT_TOKEN = "8875060146:AAERHZKxxXvlhWtAJCqVK-hrFB8WNP5xK_A";
+const BOT_USERNAME = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || "Reservation_sej_bot";
 
 function parseTime(t: string): number {
   const [h, m] = t.split(":").map(Number);
@@ -249,28 +249,20 @@ export default function BookingClient() {
 
   async function fetchInitialData() {
     try {
-      const key = "sb_publishable_lOy6FWvc2E0I4IGDkv8f8g_2hUn-eOd";
-      const headers = { apikey: key, Authorization: `Bearer ${key}` };
       const today = new Date().toISOString().split("T")[0];
 
       // Use cached API for technicians + services (5-min Next.js Data Cache + 60-s in-memory)
-      const [cacheRes, shiftsRes, aptRes] = await Promise.all([
-        fetch(`/api/cache/initial-data`, { headers }),
-        fetch(
-          `https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/shifts?date=gte.${today}&order=date.asc`,
-          { headers },
-        ),
-        fetch(
-          `https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/appointments?date=gte.${today}&order=date.asc,start_time.asc&status=neq.cancelled`,
-          { headers },
-        ),
+      const [cacheRes, shiftsData, aptData] = await Promise.all([
+        fetch(`/api/cache/initial-data`),
+        apiFetchAllSafe('shifts', `date=gte.${today}&order=date.asc`),
+        apiFetchAllSafe('appointments', `date=gte.${today}&order=date.asc,start_time.asc&status=neq.cancelled`),
       ]);
 
       const cacheData = await cacheRes.json();
       setTechnicians(cacheData.technicians || []);
       setServices(cacheData.services || []);
-      setShifts((await shiftsRes.json()) || []);
-      setAppointments((await aptRes.json()) || []);
+      setShifts(shiftsData || []);
+      setAppointments(aptData || []);
 
       const now = new Date();
       const taipeiStr = now.toLocaleString("en-US", { timeZone: "Asia/Taipei" });
@@ -417,35 +409,31 @@ export default function BookingClient() {
     setSubmitting(true);
     setMessage("");
     try {
-      const key = "sb_publishable_lOy6FWvc2E0I4IGDkv8f8g_2hUn-eOd";
-      const response = await fetch(
-        "https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/appointments",
+      const end_time = (() => {
+        const s = parseTime(selectedSlot.start) + selectedServiceDuration;
+        return timeToStr(s % (24 * 60));
+      })();
+
+      const response = await apiFetch<any>(
+        'appointments',
         {
-          method: "POST",
-          headers: {
-            apikey: key,
-            Authorization: `Bearer ${key}`,
-            "Content-Type": "application/json",
-            Prefer: "return=representation",
-          },
-          body: JSON.stringify({
+          method: 'POST',
+          body: {
             technician_id: selectedTech,
             service_id: selectedService,
             client_nickname: sessionStorage.getItem("first_name") || "用戶",
             client_phone: "Telegram",
             date: selectedDate,
             start_time: selectedSlot.start,
-            end_time: (() => {
-              const s = parseTime(selectedSlot.start) + selectedServiceDuration;
-              return timeToStr(s % (24 * 60));
-            })(),
+            end_time,
             status: "confirmed",
             telegram_id: sessionStorage.getItem("telegram_id") || null,
-          }),
+          },
+          prefer: 'return=representation',
         },
-      );
+      ).then(() => true).catch(() => false);
 
-      if (response.ok) {
+      if (response) {
         const techName =
           technicians.find((t) => t.id === selectedTech)?.nickname ||
           selectedTech;
@@ -470,8 +458,7 @@ export default function BookingClient() {
         fetchInitialData();
         window.location.href = "/book/success";
       } else {
-        const err = await response.text();
-        setMessage("❌ 預約失敗：" + err);
+        setMessage("❌ 預約失敗，請稍後再試");
       }
     } catch (e) {
       setMessage("❌ 發生錯誤，請稍後再試");

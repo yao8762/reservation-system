@@ -4,22 +4,36 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
-const ADMIN_PASSWORD = 'admin123' // 建議正式上線前改成更複雜的密碼
-
 export default function AdminLogin() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState(false)
+  const [loading, setLoading] = useState(false)
   const router = useRouter()
 
-  function handleLogin(e: React.FormEvent) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
-    if (password === ADMIN_PASSWORD) {
-      // Simple session storage check (not secure for production, but MVP level)
-      sessionStorage.setItem('admin_logged_in', 'true')
-      router.push('/admin')
-    } else {
+    setLoading(true)
+    setError(false)
+
+    try {
+      const res = await fetch('/api/auth/admin-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      })
+      const data = await res.json()
+
+      if (data.ok) {
+        router.push('/admin')
+      } else {
+        setError(true)
+        setTimeout(() => setError(false), 2000)
+      }
+    } catch {
       setError(true)
       setTimeout(() => setError(false), 2000)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -47,9 +61,10 @@ export default function AdminLogin() {
             </div>
             <button
               type="submit"
-              className="w-full bg-primary text-white py-3 rounded-xl font-bold hover:bg-secondary transition-colors"
+              disabled={loading}
+              className="w-full bg-primary text-white py-3 rounded-xl font-bold hover:bg-secondary transition-colors disabled:opacity-50"
             >
-              登入
+              {loading ? '登入中...' : '登入'}
             </button>
           </form>
         </div>

@@ -2,12 +2,20 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { apiFetchAllSafe } from "@/lib/api";
 
 interface Technician {
   id: string;
   name: string;
   nickname: string;
   specialty: string;
+}
+
+interface ShiftItem {
+  technician_id: string;
+  date: string;
+  start_time: string;
+  end_time: string;
 }
 
 export default function TechniciansClient() {
@@ -22,34 +30,18 @@ export default function TechniciansClient() {
 
   async function fetchData() {
     try {
-      const key = "sb_publishable_lOy6FWvc2E0I4IGDkv8f8g_2hUn-eOd";
-      const headers = {
-        apikey: key,
-        Authorization: `Bearer ${key}`,
-      };
-
       const today = new Date().toISOString().split("T")[0];
 
-      const [techRes, shiftRes] = await Promise.all([
-        fetch(
-          "https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/technicians?order=nickname.asc",
-          { headers },
-        ),
-        fetch(
-          `https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/shifts?date=gte.${today}&order=technician_id.asc,date.asc`,
-          { headers },
-        ),
+      const [techData, shiftData] = await Promise.all([
+        apiFetchAllSafe<Technician>('technicians', 'order=nickname.asc'),
+        apiFetchAllSafe<ShiftItem>('shifts', `date=gte.${today}&order=technician_id.asc,date.asc`),
       ]);
 
-      const techData = await techRes.json();
-      const shiftData = await shiftRes.json();
+      setTechnicians(techData);
 
-      setTechnicians(techData || []);
-
-      // 只顯示最近的一個班（取未來最近的一筆）
       const counts: Record<string, number> = {};
       const sTypes: Record<string, string[]> = {};
-      (shiftData || []).forEach((s: any) => {
+      shiftData.forEach((s) => {
         counts[s.technician_id] = (counts[s.technician_id] || 0) + 1;
         if (!sTypes[s.technician_id]) sTypes[s.technician_id] = [];
         const timeLabel = `${s.start_time.slice(0, 5)}-${s.end_time.slice(0, 5)}`;
@@ -58,11 +50,9 @@ export default function TechniciansClient() {
       });
       // 只保留最近的一筆
       Object.keys(sTypes).forEach((tid) => {
-        const techList = (shiftData || []).filter(
-          (s: any) => s.technician_id === tid,
-        );
+        const techList = shiftData.filter((s) => s.technician_id === tid);
         if (techList.length > 0) {
-          const next = techList.sort((a: any, b: any) =>
+          const next = [...techList].sort((a, b) =>
             a.date.localeCompare(b.date),
           )[0];
           sTypes[tid] = [

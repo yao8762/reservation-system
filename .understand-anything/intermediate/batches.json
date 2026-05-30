@@ -1,0 +1,392 @@
+{
+  "schemaVersion": 1,
+  "algorithm": "louvain",
+  "totalFiles": 37,
+  "totalBatches": 5,
+  "exportsByPath": {
+    "eslint.config.mjs": [],
+    "next.config.ts": [],
+    "postcss.config.mjs": [],
+    "src/app/admin/AdminClient.tsx": [
+      "AdminClient"
+    ],
+    "src/app/admin/login/page.tsx": [
+      "AdminLogin"
+    ],
+    "src/app/admin/page.tsx": [
+      "dynamic",
+      "AdminPage"
+    ],
+    "src/app/api/auth/login-token/route.ts": [
+      "GET"
+    ],
+    "src/app/api/auth/request-code/route.ts": [
+      "GET"
+    ],
+    "src/app/api/auth/webhook/route.ts": [
+      "POST"
+    ],
+    "src/app/api/cache/initial-data/route.ts": [
+      "dynamic",
+      "GET"
+    ],
+    "src/app/api/services/[id]/route.ts": [
+      "PATCH",
+      "DELETE"
+    ],
+    "src/app/api/services/route.ts": [
+      "GET",
+      "POST"
+    ],
+    "src/app/book/BookingClient.tsx": [
+      "BookingClient"
+    ],
+    "src/app/book/page.tsx": [
+      "dynamic",
+      "BookPage"
+    ],
+    "src/app/book/success/page.tsx": [
+      "SuccessPage"
+    ],
+    "src/app/layout.tsx": [
+      "metadata",
+      "RootLayout"
+    ],
+    "src/app/page.tsx": [
+      "HomePage"
+    ],
+    "src/app/technicians/page.tsx": [
+      "dynamic",
+      "TechniciansPage"
+    ],
+    "src/app/technicians/TechniciansClient.tsx": [
+      "TechniciansClient"
+    ],
+    "src/components/ThemeProvider.tsx": [
+      "ThemeProvider"
+    ],
+    "src/components/TimeSlotSelect.tsx": [
+      "TimeSlotSelect"
+    ],
+    "src/lib/cache.ts": [
+      "getFromMemory",
+      "setToMemory",
+      "getTechniciansCached",
+      "getServicesCached",
+      "getTechniciansAndServicesCached"
+    ],
+    "src/lib/db.ts": [
+      "query",
+      "insertAppointment"
+    ],
+    "src/lib/supabase.ts": [
+      "supabase",
+      "IS_DEMO"
+    ],
+    "src/lib/types.ts": [
+      "SHIFT_LABELS",
+      "SHIFT_TIMES"
+    ]
+  },
+  "batches": [
+    {
+      "batchIndex": 1,
+      "files": [
+        {
+          "path": "supabase/migrations/002_add_indexes.sql",
+          "language": "sql",
+          "sizeLines": 11,
+          "fileCategory": "data"
+        }
+      ],
+      "batchImportData": {
+        "supabase/migrations/002_add_indexes.sql": []
+      },
+      "neighborMap": {}
+    },
+    {
+      "batchIndex": 2,
+      "files": [
+        {
+          "path": "AGENTS.md",
+          "language": "markdown",
+          "sizeLines": 5,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "CLAUDE.md",
+          "language": "markdown",
+          "sizeLines": 1,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "README.md",
+          "language": "markdown",
+          "sizeLines": 36,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "SPEC.md",
+          "language": "markdown",
+          "sizeLines": 178,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "package.json",
+          "language": "json",
+          "sizeLines": 30,
+          "fileCategory": "config"
+        },
+        {
+          "path": "tsconfig.json",
+          "language": "json",
+          "sizeLines": 34,
+          "fileCategory": "config"
+        }
+      ],
+      "batchImportData": {
+        "AGENTS.md": [],
+        "CLAUDE.md": [],
+        "README.md": [],
+        "SPEC.md": [],
+        "package.json": [],
+        "tsconfig.json": []
+      },
+      "neighborMap": {}
+    },
+    {
+      "batchIndex": 3,
+      "files": [
+        {
+          "path": "supabase/migrate_blacklist.sql",
+          "language": "sql",
+          "sizeLines": 40,
+          "fileCategory": "data"
+        },
+        {
+          "path": "supabase/migrate_login_tokens.sql",
+          "language": "sql",
+          "sizeLines": 26,
+          "fileCategory": "data"
+        },
+        {
+          "path": "supabase/migrate_remove_shift_type_constraints.sql",
+          "language": "sql",
+          "sizeLines": 24,
+          "fileCategory": "data"
+        },
+        {
+          "path": "supabase/schema.sql",
+          "language": "sql",
+          "sizeLines": 176,
+          "fileCategory": "data"
+        }
+      ],
+      "batchImportData": {
+        "supabase/migrate_blacklist.sql": [],
+        "supabase/migrate_login_tokens.sql": [],
+        "supabase/migrate_remove_shift_type_constraints.sql": [],
+        "supabase/schema.sql": []
+      },
+      "neighborMap": {}
+    },
+    {
+      "batchIndex": 4,
+      "files": [
+        {
+          "path": "eslint.config.mjs",
+          "language": "javascript",
+          "sizeLines": 18,
+          "fileCategory": "code"
+        },
+        {
+          "path": "next.config.ts",
+          "language": "typescript",
+          "sizeLines": 7,
+          "fileCategory": "code"
+        },
+        {
+          "path": "postcss.config.mjs",
+          "language": "javascript",
+          "sizeLines": 7,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/app/admin/AdminClient.tsx",
+          "language": "typescript",
+          "sizeLines": 1836,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/app/admin/login/page.tsx",
+          "language": "typescript",
+          "sizeLines": 58,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/app/admin/page.tsx",
+          "language": "typescript",
+          "sizeLines": 6,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/app/api/auth/login-token/route.ts",
+          "language": "typescript",
+          "sizeLines": 53,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/app/api/auth/request-code/route.ts",
+          "language": "typescript",
+          "sizeLines": 59,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/app/api/auth/webhook/route.ts",
+          "language": "typescript",
+          "sizeLines": 90,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/app/api/cache/initial-data/route.ts",
+          "language": "typescript",
+          "sizeLines": 29,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/app/api/services/[id]/route.ts",
+          "language": "typescript",
+          "sizeLines": 55,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/app/api/services/route.ts",
+          "language": "typescript",
+          "sizeLines": 47,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/app/book/BookingClient.tsx",
+          "language": "typescript",
+          "sizeLines": 882,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/app/book/page.tsx",
+          "language": "typescript",
+          "sizeLines": 7,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/app/book/success/page.tsx",
+          "language": "typescript",
+          "sizeLines": 144,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/app/globals.css",
+          "language": "css",
+          "sizeLines": 36,
+          "fileCategory": "markup"
+        },
+        {
+          "path": "src/app/layout.tsx",
+          "language": "typescript",
+          "sizeLines": 36,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/app/page.tsx",
+          "language": "typescript",
+          "sizeLines": 70,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/app/technicians/page.tsx",
+          "language": "typescript",
+          "sizeLines": 6,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/app/technicians/TechniciansClient.tsx",
+          "language": "typescript",
+          "sizeLines": 136,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/components/ThemeProvider.tsx",
+          "language": "typescript",
+          "sizeLines": 28,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/components/TimeSlotSelect.tsx",
+          "language": "typescript",
+          "sizeLines": 84,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/lib/cache.ts",
+          "language": "typescript",
+          "sizeLines": 87,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/lib/db.ts",
+          "language": "typescript",
+          "sizeLines": 155,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/lib/supabase.ts",
+          "language": "typescript",
+          "sizeLines": 8,
+          "fileCategory": "code"
+        }
+      ],
+      "batchImportData": {
+        "eslint.config.mjs": [],
+        "next.config.ts": [],
+        "postcss.config.mjs": [],
+        "src/app/admin/AdminClient.tsx": [],
+        "src/app/admin/login/page.tsx": [],
+        "src/app/admin/page.tsx": [],
+        "src/app/api/auth/login-token/route.ts": [],
+        "src/app/api/auth/request-code/route.ts": [],
+        "src/app/api/auth/webhook/route.ts": [],
+        "src/app/api/cache/initial-data/route.ts": [],
+        "src/app/api/services/[id]/route.ts": [],
+        "src/app/api/services/route.ts": [],
+        "src/app/book/BookingClient.tsx": [],
+        "src/app/book/page.tsx": [],
+        "src/app/book/success/page.tsx": [],
+        "src/app/globals.css": [],
+        "src/app/layout.tsx": [],
+        "src/app/page.tsx": [],
+        "src/app/technicians/page.tsx": [],
+        "src/app/technicians/TechniciansClient.tsx": [],
+        "src/components/ThemeProvider.tsx": [],
+        "src/components/TimeSlotSelect.tsx": [],
+        "src/lib/cache.ts": [],
+        "src/lib/db.ts": [],
+        "src/lib/supabase.ts": []
+      },
+      "neighborMap": {}
+    },
+    {
+      "batchIndex": 5,
+      "files": [
+        {
+          "path": "src/lib/types.ts",
+          "language": "typescript",
+          "sizeLines": 65,
+          "fileCategory": "code"
+        }
+      ],
+      "batchImportData": {
+        "src/lib/types.ts": []
+      },
+      "neighborMap": {}
+    }
+  ]
+}

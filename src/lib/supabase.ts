@@ -1,9 +1,27 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://msfnakrwhggvbrotvbfq.supabase.co'
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_lOy6FWvc2E0I4IGDkv8f8g_2hUn-eOd'
+export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+export const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key'
 
-export const supabase = createClient(supabaseUrl, supabaseKey)
+// Always a valid client (env vars must be set in production)
+// The client is lazily created so build-time works with empty env
+let _client: SupabaseClient | null = null
 
-// 為了方便本地測試，如果没有真实 Supabase，就用模擬資料
+export function getSupabase(): SupabaseClient {
+  if (!_client) {
+    _client = createClient(SUPABASE_URL || 'https://placeholder.supabase.co', SUPABASE_KEY)
+  }
+  return _client
+}
+
+// Backward compat - existing code imports this directly
+export const supabase = getSupabase()
+
+// Server-side service role client (server-only, has elevated privileges)
+export function getServiceRoleClient(): SupabaseClient | null {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || SUPABASE_KEY
+  if (!SUPABASE_URL || !key || key === 'placeholder-anon-key') return null
+  return createClient(SUPABASE_URL, key)
+}
+
 export const IS_DEMO = false

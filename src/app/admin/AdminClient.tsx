@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import TimeSlotSelect from "@/components/TimeSlotSelect";
 import { supabase } from "@/lib/supabase";
+import { apiFetch, apiFetchAllSafe } from "@/lib/api";
 
 interface Technician {
   id: string;
@@ -67,8 +68,7 @@ export default function AdminClient() {
   const [dateRange, setDateRange] = useState<DateRange>("week");
   const [showAllReservations, setShowAllReservations] = useState(false);
   const [allReservations, setAllReservations] = useState<Appointment[]>([]);
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "sb_publishable_lOy6FWvc2E0I4IGDkv8f8g_2hUn-eOd";
-  const supabaseHeaders = { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` };
+
 
   const [stats, setStats] = useState({
     todayCount: 0,
@@ -252,35 +252,17 @@ export default function AdminClient() {
 
   async function fetchData() {
     try {
-      const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "sb_publishable_lOy6FWvc2E0I4IGDkv8f8g_2hUn-eOd";
-      const headers = { apikey: key, Authorization: `Bearer ${key}` };
       const today = new Date().toISOString().split("T")[0];
       const monthStart = new Date();
       monthStart.setDate(1);
       const monthStr = monthStart.toISOString().split("T")[0];
 
-      const [aptRes, techRes, svcRes, shiftRes] = await Promise.all([
-        fetch(
-          `https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/appointments?date=gte.${today}&order=date.asc,start_time.asc`,
-          { headers },
-        ),
-        fetch(
-          "https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/technicians?order=nickname.asc",
-          { headers },
-        ),
-        fetch("https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/services?", {
-          headers,
-        }),
-        fetch(
-          `https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/shifts?date=gte.${today}&order=date.asc`,
-          { headers },
-        ),
+      const [allAppointments, techData, svcData, shiftData] = await Promise.all([
+        apiFetchAllSafe<any>('appointments', `date=gte.${today}&order=date.asc,start_time.asc`),
+        apiFetchAllSafe<any>('technicians', 'order=nickname.asc'),
+        apiFetchAllSafe<any>('services'),
+        apiFetchAllSafe<any>('shifts', `date=gte.${today}&order=date.asc`),
       ]);
-
-      const allAppointments = await aptRes.json();
-      const techData = await techRes.json();
-      const svcData = await svcRes.json();
-      const shiftData = await shiftRes.json();
 
       const techMap: Record<string, string> = {};
       techData.forEach((t: any) => {
@@ -352,13 +334,7 @@ export default function AdminClient() {
 
   async function fetchAllReservations() {
     try {
-      const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "sb_publishable_lOy6FWvc2E0I4IGDkv8f8g_2hUn-eOd";
-      const headers = { apikey: key, Authorization: `Bearer ${key}` };
-      const res = await fetch(
-        `https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/appointments?order=date.desc,start_time.desc&limit=200`,
-        { headers },
-      );
-      const data = await res.json();
+      const data = await apiFetchAllSafe<any>('appointments', 'order=date.desc,start_time.desc&limit=200');
 
       const techMap: Record<string, string> = {};
       technicians.forEach((t) => { techMap[t.id] = t.nickname; });
@@ -390,50 +366,30 @@ export default function AdminClient() {
 
   async function blockUser(telegramId: string) {
     if (!telegramId || !confirm(`確定要封鎖 TG ID：${telegramId}？`)) return;
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "sb_publishable_lOy6FWvc2E0I4IGDkv8f8g_2hUn-eOd";
-    const headers = { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" };
-    await fetch(
-      `https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/telegram_users?telegram_id=eq.${telegramId}`,
-      {
-        method: "PATCH",
-        headers,
-        body: JSON.stringify({ is_blacklisted: true, note: "管理員後台封鎖" }),
-      },
-    ).catch(() => {});
+    await apiFetch(`telegram_users?telegram_id=eq.${telegramId}`, {
+      method: 'PATCH',
+      body: { is_blacklisted: true, note: '管理員後台封鎖' },
+    }).catch(() => {});
     // also try insert in case record doesn't exist
-    await fetch(
-      "https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/telegram_users",
-      {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ telegram_id: telegramId, is_blacklisted: true, is_whitelisted: false, note: "管理員後台封鎖" }),
-      },
-    ).catch(() => {});
+    await apiFetch('telegram_users', {
+      method: 'POST',
+      body: { telegram_id: telegramId, is_blacklisted: true, is_whitelisted: false, note: '管理員後台封鎖' },
+    }).catch(() => {});
     alert(`已封鎖 TG ID：${telegramId}`);
   }
 
   async function updateAppointment(id: string, status: string) {
-    await fetch(
-      `https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/appointments?id=eq.${id}`,
-      {
-        method: "PATCH",
-        headers: {
-          ...supabaseHeaders,
-          "Content-Type": "application/json",
-          Prefer: "return=minimal",
-        },
-        body: JSON.stringify({ status }),
-      },
-    );
+    await apiFetch(`appointments?id=eq.${id}`, {
+      method: 'PATCH',
+      body: { status },
+      prefer: 'return=minimal',
+    }).catch(() => {});
     fetchData();
   }
 
   async function deleteAppointment(id: string) {
     if (!confirm("確定要刪除此預約？")) return;
-    await fetch(
-      `https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/appointments?id=eq.${id}`,
-      { method: "DELETE", headers: supabaseHeaders },
-    );
+    await apiFetch(`appointments?id=eq.${id}`, { method: 'DELETE' }).catch(() => {});
     fetchData();
   }
 
@@ -469,48 +425,34 @@ export default function AdminClient() {
     const endTime = `${String(Math.floor(endTotal / 60) % 24).padStart(2, "0")}:${String(endTotal % 60).padStart(2, "0")}`;
 
     if (editApptId) {
-      await fetch(
-        `https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/appointments?id=eq.${editApptId}`,
-        {
-          method: "PATCH",
-          headers: {
-            ...supabaseHeaders,
-            "Content-Type": "application/json",
-            Prefer: "return=minimal",
-          },
-          body: JSON.stringify({
-            technician_id: apptTech,
-            service_id: apptSvc,
-            date: apptDate,
-            start_time: apptTime,
-            end_time: endTime,
-            client_nickname: apptClient,
-            client_phone: apptPhone,
-          }),
+      await apiFetch(`appointments?id=eq.${editApptId}`, {
+        method: 'PATCH',
+        body: {
+          technician_id: apptTech,
+          service_id: apptSvc,
+          date: apptDate,
+          start_time: apptTime,
+          end_time: endTime,
+          client_nickname: apptClient,
+          client_phone: apptPhone,
         },
-      );
+        prefer: 'return=minimal',
+      }).catch(() => {});
     } else {
-      await fetch(
-        "https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/appointments",
-        {
-          method: "POST",
-          headers: {
-            ...supabaseHeaders,
-            "Content-Type": "application/json",
-            Prefer: "return=representation",
-          },
-          body: JSON.stringify({
-            technician_id: apptTech,
-            service_id: apptSvc,
-            date: apptDate,
-            start_time: apptTime,
-            end_time: endTime,
-            client_nickname: apptClient,
-            client_phone: apptPhone,
-            status: "confirmed",
-          }),
+      await apiFetch('appointments', {
+        method: 'POST',
+        body: {
+          technician_id: apptTech,
+          service_id: apptSvc,
+          date: apptDate,
+          start_time: apptTime,
+          end_time: endTime,
+          client_nickname: apptClient,
+          client_phone: apptPhone,
+          status: 'confirmed',
         },
-      );
+        prefer: 'return=representation',
+      }).catch(() => {});
     }
     setShowApptModal(false);
     fetchData();
@@ -518,10 +460,7 @@ export default function AdminClient() {
 
   async function deleteShift(id: string) {
     if (!confirm("確定要刪除此班表？")) return;
-    await fetch(
-      `https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/shifts?id=eq.${id}`,
-      { method: "DELETE", headers: supabaseHeaders },
-    );
+    await apiFetch(`shifts?id=eq.${id}`, { method: 'DELETE' }).catch(() => {});
     // 只在本地移除這筆記錄（setShifts 會觸發 useEffect → buildCalendar 重建 calendarShifts）
     setShifts((prev) => prev.filter((s) => s.id !== id));
   }
@@ -533,17 +472,16 @@ export default function AdminClient() {
     date: string,
   ) {
     const endDate = getEndDate(date, startTime, endTime);
-    await fetch("https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/shifts", {
-      method: "POST",
-    headers: { ...supabaseHeaders, "Content-Type": "application/json" },
-      body: JSON.stringify({
+    await apiFetch('shifts', {
+      method: 'POST',
+      body: {
         technician_id: technicianId,
         date,
         start_time: startTime,
         end_time: endTime,
         end_date: endDate,
-      }),
-    });
+      },
+    }).catch(() => {});
     fetchData();
   }
 
@@ -561,17 +499,16 @@ export default function AdminClient() {
         (s) => s.technician_id === schedTech && s.date === dateStr,
       );
       if (!existing) {
-        await fetch("https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/shifts", {
-          method: "POST",
-          headers: { ...supabaseHeaders, "Content-Type": "application/json" },
-          body: JSON.stringify({
+        await apiFetch('shifts', {
+          method: 'POST',
+          body: {
             technician_id: schedTech,
             date: dateStr,
             start_time: schedStartTime,
             end_time: schedEndTime,
             end_date: endDate,
-          }),
-        });
+          },
+        }).catch(() => {});
       }
       startD.setDate(startD.getDate() + 1);
     }
@@ -1262,13 +1199,6 @@ function TechniciansTab({
   services: Service[];
   onRefresh: () => void;
 }) {
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "sb_publishable_lOy6FWvc2E0I4IGDkv8f8g_2hUn-eOd";
-  const headers = {
-    apikey: key,
-    Authorization: `Bearer ${key}`,
-    "Content-Type": "application/json",
-  };
-
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState("");
   const [formName, setFormName] = useState("");
@@ -1293,36 +1223,22 @@ function TechniciansTab({
     e.preventDefault();
     const body = { name: formName, nickname: formNick, specialty: formSpec };
     if (editId) {
-      await fetch(
-        `https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/technicians?id=eq.${editId}`,
-        {
-          method: "PATCH",
-          headers,
-          body: JSON.stringify(body),
-        },
-      );
+      await apiFetch(`technicians?id=eq.${editId}`, {
+        method: 'PATCH',
+        body,
+      }).catch(() => {});
     } else {
-      await fetch(
-        "https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/technicians",
-        {
-          method: "POST",
-          headers,
-          body: JSON.stringify(body),
-        },
-      );
+      await apiFetch('technicians', {
+        method: 'POST',
+        body,
+      }).catch(() => {});
     }
     setShowModal(false);
     onRefresh();
   }
   async function remove(id: string) {
     if (!confirm("確定要刪除此技師？")) return;
-    await fetch(
-      `https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/technicians?id=eq.${id}`,
-      {
-        method: "DELETE",
-        headers,
-      },
-    );
+    await apiFetch(`technicians?id=eq.${id}`, { method: 'DELETE' }).catch(() => {});
     onRefresh();
   }
 
@@ -1437,13 +1353,6 @@ function ServicesTab({
   services: Service[]
   onRefresh: () => void
 }) {
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "sb_publishable_lOy6FWvc2E0I4IGDkv8f8g_2hUn-eOd"
-  const headers = {
-    apikey: key,
-    Authorization: `Bearer ${key}`,
-    "Content-Type": "application/json",
-  }
-
   const [showModal, setShowModal] = useState(false)
   const [editId, setEditId] = useState("")
   const [formName, setFormName] = useState("")
@@ -1497,7 +1406,7 @@ function ServicesTab({
 
   async function remove(id: string) {
     if (!confirm("確定要刪除此服務項目？")) return
-    await fetch(`/api/services/${id}`, { method: "DELETE", headers })
+    await fetch(`/api/services/${id}`, { method: "DELETE" })
     onRefresh()
   }
 
@@ -1633,13 +1542,6 @@ function BlacklistTab({
   technicians: any[];
   onRefresh: () => void;
 }) {
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "sb_publishable_lOy6FWvc2E0I4IGDkv8f8g_2hUn-eOd";
-  const headers = {
-    apikey: key,
-    Authorization: `Bearer ${key}`,
-    "Content-Type": "application/json",
-  };
-
   const [blacklist, setBlacklist] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -1650,59 +1552,31 @@ function BlacklistTab({
   async function fetchBlacklist() {
     setLoading(true);
     try {
-      const res = await fetch(
-        "https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/telegram_users?is_blacklisted=eq.true&order=created_at.desc",
-        {
-          headers: { apikey: key, Authorization: `Bearer ${key}` },
-        },
-      );
-      setBlacklist((await res.json()) || []);
+      const data = await apiFetchAllSafe<any>('telegram_users', 'is_blacklisted=eq.true&order=created_at.desc');
+      setBlacklist(data || []);
     } finally {
       setLoading(false);
     }
   }
 
-  // 加入黑名單
   async function addToBlacklist(telegramId: string, note: string) {
-    await fetch(
-      "https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/telegram_users",
-      {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          telegram_id: telegramId,
-          is_blacklisted: true,
-          is_whitelisted: false,
-          note,
-        }),
-      },
-    ).catch(() => {});
-    await fetch(
-      `https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/telegram_users?telegram_id=eq.${telegramId}`,
-      {
-        method: "PATCH",
-        headers,
-        body: JSON.stringify({
-          is_blacklisted: true,
-          is_whitelisted: false,
-          note,
-        }),
-      },
-    );
+    await apiFetch('telegram_users', {
+      method: 'POST',
+      body: { telegram_id: telegramId, is_blacklisted: true, is_whitelisted: false, note },
+    }).catch(() => {});
+    await apiFetch(`telegram_users?telegram_id=eq.${telegramId}`, {
+      method: 'PATCH',
+      body: { is_blacklisted: true, is_whitelisted: false, note },
+    }).catch(() => {});
     fetchBlacklist();
   }
 
-  // 解除黑名單
   async function removeFromBlacklist(telegramId: string) {
     if (!confirm("確定要將此客戶從黑名單移除？")) return;
-    await fetch(
-      `https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/telegram_users?telegram_id=eq.${telegramId}`,
-      {
-        method: "PATCH",
-        headers,
-        body: JSON.stringify({ is_blacklisted: false, note: null }),
-      },
-    );
+    await apiFetch(`telegram_users?telegram_id=eq.${telegramId}`, {
+      method: 'PATCH',
+      body: { is_blacklisted: false, note: null },
+    }).catch(() => {});
     fetchBlacklist();
   }
 

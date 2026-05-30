@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const KEY = 'sb_publishable_lOy6FWvc2E0I4IGDkv8f8g_2hUn-eOd'
-const LOGIN_CODES_URL = 'https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/login_codes'
-const TG_USERS_URL = 'https://msfnakrwhggvbrotvbfq.supabase.co/rest/v1/telegram_users'
+const KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+const LOGIN_CODES_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/login_codes`
+const TG_USERS_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/telegram_users`
 const HEADERS = { 'apikey': KEY, 'Authorization': `Bearer ${KEY}`, 'Content-Type': 'application/json' }
 
 // ============================================================
@@ -34,18 +34,18 @@ export async function GET(req: NextRequest) {
   if (record.verified) {
     await fetch(`${LOGIN_CODES_URL}?id=eq.${record.id}`, {
       method: 'DELETE', headers: HEADERS
-    }).catch(() => {})
+    }).catch((e) => console.error('Failed to delete login code:', e))
 
     const verifiedId = record.telegram_id || code
 
     await fetch(TG_USERS_URL, {
       method: 'POST', headers: HEADERS,
       body: JSON.stringify({ telegram_id: verifiedId, is_whitelisted: true, is_blacklisted: false })
-    }).catch(() => {})
+    }).catch((e) => console.error('Failed to upsert tg user:', e))
     await fetch(`${TG_USERS_URL}?telegram_id=eq.${verifiedId}`, {
       method: 'PATCH', headers: HEADERS,
       body: JSON.stringify({ is_whitelisted: true, is_blacklisted: false })
-    }).catch(() => {})
+    }).catch((e) => console.error('Failed to patch tg user:', e))
 
     return NextResponse.json({ ok: true, verified: true, telegram_id: verifiedId })
   }
