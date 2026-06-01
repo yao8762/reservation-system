@@ -72,31 +72,18 @@ export default function AdminClient() {
 
   // 動態月份計算（用於標籤顯示和數據查詢）
   const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthStr = monthStart.toISOString().split("T")[0];
-  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const lastMonthStartStr = lastMonthStart.toISOString().split("T")[0];
-  const fetchStartDate = lastMonthStartStr;
+  const fetchStartDate = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString().split("T")[0];
 
   const [stats, setStats] = useState({
     todayCount: 0,
     todayRevenue: 0,
-    monthCount: 0,
-    monthRevenue: 0,
-    lastMonthCount: 0,
-    lastMonthRevenue: 0,
   });
-  const [statsRange, setStatsRange] = useState<"today" | "thisMonth" | "lastMonth">("thisMonth");
-  const [techStats, setTechStats] = useState<
-    {
-      nickname: string;
-      thisMonthBookings: number;
-      thisMonthRevenue: number;
-      lastMonthBookings: number;
-      lastMonthRevenue: number;
-    }[]
-  >([]);
-  const [techStatsRange, setTechStatsRange] = useState<"thisMonth" | "lastMonth">("thisMonth");
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [monthlyStats, setMonthlyStats] = useState<Record<string, { count: number; revenue: number }>>({});
+  const [techStats, setTechStats] = useState<Record<string, Record<string, { bookings: number; revenue: number }>>>({});
 
   // Appointment modal
   const [showApptModal, setShowApptModal] = useState(false);
@@ -311,49 +298,42 @@ export default function AdminClient() {
       const todayApts = (allAppointments || []).filter(
         (a: any) => a.date === today && a.status === "confirmed",
       );
-      const monthApts = (allAppointments || []).filter(
-        (a: any) => a.date >= monthStr && a.status === "confirmed",
-      );
-      const lastMonthApts = (allAppointments || []).filter(
-        (a: any) => a.date >= lastMonthStartStr && a.date < monthStr && a.status === "confirmed",
-      );
-
       setStats({
         todayCount: todayApts.length,
         todayRevenue: todayApts.reduce(
           (s: number, a: any) => s + (svcMap[a.service_id]?.price || 0),
           0,
         ),
-        monthCount: monthApts.length,
-        monthRevenue: monthApts.reduce(
-          (s: number, a: any) => s + (svcMap[a.service_id]?.price || 0),
-          0,
-        ),
-        lastMonthCount: lastMonthApts.length,
-        lastMonthRevenue: lastMonthApts.reduce(
-          (s: number, a: any) => s + (svcMap[a.service_id]?.price || 0),
-          0,
-        ),
       });
 
-      const tStats = techData.map((t: any) => {
-        const tThisMonthApts = monthApts.filter((a: any) => a.technician_id === t.id);
-        const tLastMonthApts = lastMonthApts.filter((a: any) => a.technician_id === t.id);
-        return {
-          nickname: t.nickname,
-          thisMonthBookings: tThisMonthApts.length,
-          thisMonthRevenue: tThisMonthApts.reduce(
-            (s: number, a: any) => s + (svcMap[a.service_id]?.price || 0),
-            0,
-          ),
-          lastMonthBookings: tLastMonthApts.length,
-          lastMonthRevenue: tLastMonthApts.reduce(
-            (s: number, a: any) => s + (svcMap[a.service_id]?.price || 0),
-            0,
-          ),
+      // Compute per-month stats for the last 6 months
+      const monthlyMap: Record<string, { count: number; revenue: number }> = {};
+      const techMonthMap: Record<string, Record<string, { bookings: number; revenue: number }>> = {};
+      const now = new Date();
+      for (let i = 0; i < 6; i++) {
+        const mDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const mKey = `${mDate.getFullYear()}-${String(mDate.getMonth() + 1).padStart(2, '0')}`;
+        const mStart = mDate.toISOString().split("T")[0];
+        const mEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 1).toISOString().split("T")[0];
+        const mApts = (allAppointments || []).filter(
+          (a: any) => a.date >= mStart && a.date < mEnd && a.status === "confirmed",
+        );
+        monthlyMap[mKey] = {
+          count: mApts.length,
+          revenue: mApts.reduce((s: number, a: any) => s + (svcMap[a.service_id]?.price || 0), 0),
         };
-      });
-      setTechStats(tStats);
+        const tMap: Record<string, { bookings: number; revenue: number }> = {};
+        techData.forEach((t: any) => {
+          const tApts = mApts.filter((a: any) => a.technician_id === t.id);
+          tMap[t.nickname] = {
+            bookings: tApts.length,
+            revenue: tApts.reduce((s: number, a: any) => s + (svcMap[a.service_id]?.price || 0), 0),
+          };
+        });
+        techMonthMap[mKey] = tMap;
+      }
+      setMonthlyStats(monthlyMap);
+      setTechStats(techMonthMap);
     } catch (e) {
       console.error("Fetch error:", e);
     } finally {
@@ -648,55 +628,36 @@ export default function AdminClient() {
         {/* ========== STATS TAB ========== */}
         {tab === "stats" && (
           <div>
-            {/* 切換按鈕：當月 / 上月 */}
-            <div className="flex gap-2 mb-4">
-              {([
-                { key: "thisMonth", label: `${monthStart.getMonth() + 1}月` },
-                { key: "lastMonth", label: `${lastMonthStart.getMonth() + 1}月` },
-              ] as const).map((r) => (
-                <button
-                  key={r.key}
-                  onClick={() => setStatsRange(r.key)}
-                  className={`px-4 py-2 rounded-lg font-bold transition-colors ${
-                    statsRange === r.key
-                      ? "bg-primary text-white"
-                      : "bg-white text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  {r.label}
-                </button>
-              ))}
+            {/* 月份下拉選單（最近6個月） */}
+            <div className="mb-4">
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="px-4 py-2 rounded-lg font-bold border border-gray-300 bg-white text-gray-800"
+              >
+                {Array.from({ length: 6 }, (_, i) => {
+                  const d = new Date(new Date().getFullYear(), new Date().getMonth() - i, 1);
+                  const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                  const label = `${d.getMonth() + 1}月`;
+                  return <option key={key} value={key}>{label}</option>;
+                })}
+              </select>
             </div>
 
             {/* 統計卡片 */}
             <div className="grid md:grid-cols-2 gap-4 mb-8">
-              {statsRange === "thisMonth" ? (
-                <>
-                  <div className="bg-white rounded-xl p-4 shadow">
-                    <p className="text-sm text-gray-500">{monthStart.getMonth() + 1}月預約</p>
-                    <p className="text-3xl font-bold text-secondary">{stats.monthCount}</p>
-                  </div>
-                  <div className="bg-white rounded-xl p-4 shadow">
-                    <p className="text-sm text-gray-500">{monthStart.getMonth() + 1}月營收</p>
-                    <p className="text-3xl font-bold text-secondary">${stats.monthRevenue.toLocaleString()}</p>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="bg-white rounded-xl p-4 shadow">
-                    <p className="text-sm text-gray-500">{lastMonthStart.getMonth() + 1}月預約</p>
-                    <p className="text-3xl font-bold text-gray-600">{stats.lastMonthCount}</p>
-                  </div>
-                  <div className="bg-white rounded-xl p-4 shadow">
-                    <p className="text-sm text-gray-500">{lastMonthStart.getMonth() + 1}月營收</p>
-                    <p className="text-3xl font-bold text-gray-600">${stats.lastMonthRevenue.toLocaleString()}</p>
-                  </div>
-                </>
-              )}
+              <div className="bg-white rounded-xl p-4 shadow">
+                <p className="text-sm text-gray-500">{parseInt(selectedMonth.split('-')[1])}月預約</p>
+                <p className="text-3xl font-bold text-secondary">{(monthlyStats[selectedMonth]?.count ?? 0)}</p>
+              </div>
+              <div className="bg-white rounded-xl p-4 shadow">
+                <p className="text-sm text-gray-500">{parseInt(selectedMonth.split('-')[1])}月營收</p>
+                <p className="text-3xl font-bold text-secondary">${(monthlyStats[selectedMonth]?.revenue ?? 0).toLocaleString()}</p>
+              </div>
             </div>
 
             <h2 className="text-lg font-bold text-primary mb-4">
-              技師 {statsRange === "thisMonth" ? `${monthStart.getMonth() + 1}月` : `${lastMonthStart.getMonth() + 1}月`}業績
+              技師 {parseInt(selectedMonth.split('-')[1])}月業績
             </h2>
             <div className="bg-white rounded-xl shadow overflow-hidden">
               <table className="w-full">
@@ -708,15 +669,14 @@ export default function AdminClient() {
                   </tr>
                 </thead>
                 <tbody>
-                  {techStats.map((t) => {
-                    const bookings = statsRange === "thisMonth" ? t.thisMonthBookings : t.lastMonthBookings;
-                    const revenue = statsRange === "thisMonth" ? t.thisMonthRevenue : t.lastMonthRevenue;
+                  {technicians.map((tech) => {
+                    const tStats = (techStats[selectedMonth] ?? {})[tech.nickname] ?? { bookings: 0, revenue: 0 };
                     return (
-                      <tr key={t.nickname} className="border-t">
-                        <td className="px-4 py-3 font-bold">{t.nickname}</td>
-                        <td className="px-4 py-3 text-center">{bookings}</td>
+                      <tr key={tech.nickname} className="border-t">
+                        <td className="px-4 py-3 font-bold">{tech.nickname}</td>
+                        <td className="px-4 py-3 text-center">{tStats.bookings}</td>
                         <td className="px-4 py-3 text-right font-bold text-primary">
-                          ${revenue.toLocaleString()}
+                          ${tStats.revenue.toLocaleString()}
                         </td>
                       </tr>
                     );
