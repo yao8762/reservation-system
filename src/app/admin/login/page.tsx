@@ -24,6 +24,7 @@ export default function AdminLogin() {
       const data = await res.json()
 
       if (data.ok) {
+        sessionStorage.setItem("admin_logged_in", "true")
         router.push('/admin')
       } else {
         setError(true)
