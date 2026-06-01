@@ -87,6 +87,10 @@ CREATE INDEX IF NOT EXISTS telegram_users_telegram_id_idx ON telegram_users(tele
 
 -- ============================================
 -- RLS 政策（Row Level Security）
+-- 設計原則：
+--   1. 對 appointments：允許公開新增（需 telegram_id）+ 公開讀取，但禁止修改/刪除
+--   2. 對 login_codes：限制 SELECT 只能讀取未過期、未驗證的 code（驗證流程用）；寫入由 API route 以 service role 執行
+--   3. 對 telegram_users：所有操作走 service role，client 不直接存取
 -- ============================================
 ALTER TABLE technicians ENABLE ROW LEVEL SECURITY;
 ALTER TABLE services ENABLE ROW LEVEL SECURITY;
@@ -95,18 +99,41 @@ ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE login_codes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE telegram_users ENABLE ROW LEVEL SECURITY;
 
--- 技師/服務/班表：公開讀取
+-- 技師/服務/班表：公開讀取（這些是公開資訊）
 CREATE POLICY "technicians_read" ON technicians FOR SELECT USING (true);
 CREATE POLICY "services_read" ON services FOR SELECT USING (true);
 CREATE POLICY "shifts_read" ON shifts FOR SELECT USING (true);
 
--- 預約：公開新增（準系統保安，取決於前端簡單驗證）
-CREATE POLICY "appointments_insert" ON appointments FOR INSERT WITH CHECK (true);
-CREATE POLICY "appointments_read" ON appointments FOR SELECT USING (true);
+-- 預約（appointments）：
+--   INSERT: 需有 telegram_id（非 NULL），只允許已登入流程的用戶新增預約
+--   SELECT: 公開讀取（前端會自己過濾顯示哪筆，但教練/技師管理後台也需要讀取全部）
+--   UPDATE/DELETE: 完全禁止（client 端不允許修改或刪除預約）
+CREATE POLICY "appointments_insert" ON appointments FOR INSERT
+  WITH CHECK (telegram_id IS NOT NULL);
+CREATE POLICY "appointments_read" ON appointments FOR SELECT
+  USING (true);
+CREATE POLICY "appointments_update" ON appointments FOR UPDATE
+  USING (false);
+CREATE POLICY "appointments_delete" ON appointments FOR DELETE
+  USING (false);
 
--- login_codes / telegram_users：公開讀寫（Bot webhook 寫入，前端讀取驗證）
-CREATE POLICY "login_codes_all" ON login_codes FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "telegram_users_all" ON telegram_users FOR ALL USING (true) WITH CHECK (true);
+-- 登入驗證碼（login_codes）：
+--   SELECT: 只能讀取「未驗證且未過期」的 code， client 端驗證流程用
+--           這樣即使有人拿到 anon key，也只能看到正在等待驗證的 code，無法批量枚舉
+--   INSERT / DELETE: 僅限 service role（由 API route / webhook 以 elevated 權限執行）
+CREATE POLICY "login_codes_select" ON login_codes FOR SELECT
+  USING (verified = false AND expires_at > now());
+CREATE POLICY "login_codes_insert" ON login_codes FOR INSERT
+  WITH CHECK (false);  -- 禁止 client 直接寫入，由 webhook API route 以 service role 執行
+CREATE POLICY "login_codes_delete" ON login_codes FOR DELETE
+  USING (false);  -- 禁止 client 直接刪除
+
+-- Telegram 用戶（telegram_users）：
+--   所有操作（SELECT / INSERT / UPDATE / DELETE）僅限 service role
+--   Bot webhook 和管理 API route 以 service role client 執行這些操作
+--   前端 client 不應直接讀寫這張表
+CREATE POLICY "telegram_users_all" ON telegram_users FOR ALL
+  USING (false) WITH CHECK (false);
 
 -- ============================================
 -- 自動清理：刪除 10 分鐘前的舊登入碼
