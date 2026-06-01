@@ -70,15 +70,33 @@ export default function AdminClient() {
   const [allReservations, setAllReservations] = useState<Appointment[]>([]);
 
 
+  // 動態月份計算（用於標籤顯示和數據查詢）
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthStr = monthStart.toISOString().split("T")[0];
+  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastMonthStartStr = lastMonthStart.toISOString().split("T")[0];
+  const fetchStartDate = lastMonthStartStr;
+
   const [stats, setStats] = useState({
     todayCount: 0,
     todayRevenue: 0,
     monthCount: 0,
     monthRevenue: 0,
+    lastMonthCount: 0,
+    lastMonthRevenue: 0,
   });
+  const [statsRange, setStatsRange] = useState<"today" | "thisMonth" | "lastMonth">("thisMonth");
   const [techStats, setTechStats] = useState<
-    { nickname: string; bookings: number; revenue: number }[]
+    {
+      nickname: string;
+      thisMonthBookings: number;
+      thisMonthRevenue: number;
+      lastMonthBookings: number;
+      lastMonthRevenue: number;
+    }[]
   >([]);
+  const [techStatsRange, setTechStatsRange] = useState<"thisMonth" | "lastMonth">("thisMonth");
 
   // Appointment modal
   const [showApptModal, setShowApptModal] = useState(false);
@@ -253,12 +271,9 @@ export default function AdminClient() {
   async function fetchData() {
     try {
       const today = new Date().toISOString().split("T")[0];
-      const monthStart = new Date();
-      monthStart.setDate(1);
-      const monthStr = monthStart.toISOString().split("T")[0];
 
       const [allAppointments, techData, svcData, shiftData] = await Promise.all([
-        apiFetchAllSafe<any>('appointments', `date=gte.${today}&order=date.asc,start_time.asc`),
+        apiFetchAllSafe<any>('appointments', `date=gte.${fetchStartDate}&order=date.asc,start_time.asc`),
         apiFetchAllSafe<any>('technicians', 'order=nickname.asc'),
         apiFetchAllSafe<any>('services'),
         apiFetchAllSafe<any>('shifts', `date=gte.${today}&order=date.asc`),
@@ -299,6 +314,9 @@ export default function AdminClient() {
       const monthApts = (allAppointments || []).filter(
         (a: any) => a.date >= monthStr && a.status === "confirmed",
       );
+      const lastMonthApts = (allAppointments || []).filter(
+        (a: any) => a.date >= lastMonthStartStr && a.date < monthStr && a.status === "confirmed",
+      );
 
       setStats({
         todayCount: todayApts.length,
@@ -311,14 +329,25 @@ export default function AdminClient() {
           (s: number, a: any) => s + (svcMap[a.service_id]?.price || 0),
           0,
         ),
+        lastMonthCount: lastMonthApts.length,
+        lastMonthRevenue: lastMonthApts.reduce(
+          (s: number, a: any) => s + (svcMap[a.service_id]?.price || 0),
+          0,
+        ),
       });
 
       const tStats = techData.map((t: any) => {
-        const tApts = monthApts.filter((a: any) => a.technician_id === t.id);
+        const tThisMonthApts = monthApts.filter((a: any) => a.technician_id === t.id);
+        const tLastMonthApts = lastMonthApts.filter((a: any) => a.technician_id === t.id);
         return {
           nickname: t.nickname,
-          bookings: tApts.length,
-          revenue: tApts.reduce(
+          thisMonthBookings: tThisMonthApts.length,
+          thisMonthRevenue: tThisMonthApts.reduce(
+            (s: number, a: any) => s + (svcMap[a.service_id]?.price || 0),
+            0,
+          ),
+          lastMonthBookings: tLastMonthApts.length,
+          lastMonthRevenue: tLastMonthApts.reduce(
             (s: number, a: any) => s + (svcMap[a.service_id]?.price || 0),
             0,
           ),
@@ -619,38 +648,87 @@ export default function AdminClient() {
         {/* ========== STATS TAB ========== */}
         {tab === "stats" && (
           <div>
-            <div className="grid md:grid-cols-4 gap-4 mb-8">
-              {[
-                {
-                  label: "今日預約",
-                  value: stats.todayCount,
-                  color: "text-primary",
-                },
-                {
-                  label: "今日營收",
-                  value: `$${stats.todayRevenue.toLocaleString()}`,
-                  color: "text-primary",
-                },
-                {
-                  label: "本月預約",
-                  value: stats.monthCount,
-                  color: "text-secondary",
-                },
-                {
-                  label: "本月營收",
-                  value: `$${stats.monthRevenue.toLocaleString()}`,
-                  color: "text-secondary",
-                },
-              ].map((s, i) => (
-                <div key={i} className="bg-white rounded-xl p-4 shadow">
-                  <p className="text-sm text-gray-500">{s.label}</p>
-                  <p className={`text-3xl font-bold ${s.color}`}>{s.value}</p>
-                </div>
+            {/* 切換按鈕：今日 / 本月 / 上月 */}
+            <div className="flex gap-2 mb-4">
+              {([
+                { key: "today", label: "今日" },
+                { key: "thisMonth", label: `${monthStart.getMonth() + 1}月` },
+                { key: "lastMonth", label: `${lastMonthStart.getMonth() + 1}月` },
+              ] as const).map((r) => (
+                <button
+                  key={r.key}
+                  onClick={() => setStatsRange(r.key)}
+                  className={`px-4 py-2 rounded-lg font-bold transition-colors ${
+                    statsRange === r.key
+                      ? "bg-primary text-white"
+                      : "bg-white text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  {r.label}
+                </button>
               ))}
             </div>
-            <h2 className="text-lg font-bold text-primary mb-4">
-              技師本月業績
-            </h2>
+
+            {/* 統計卡片 */}
+            <div className="grid md:grid-cols-2 gap-4 mb-8">
+              {statsRange === "today" && (
+                <>
+                  <div className="bg-white rounded-xl p-4 shadow">
+                    <p className="text-sm text-gray-500">今日預約</p>
+                    <p className="text-3xl font-bold text-primary">{stats.todayCount}</p>
+                  </div>
+                  <div className="bg-white rounded-xl p-4 shadow">
+                    <p className="text-sm text-gray-500">今日營收</p>
+                    <p className="text-3xl font-bold text-primary">${stats.todayRevenue.toLocaleString()}</p>
+                  </div>
+                </>
+              )}
+              {statsRange === "thisMonth" && (
+                <>
+                  <div className="bg-white rounded-xl p-4 shadow">
+                    <p className="text-sm text-gray-500">{monthStart.getMonth() + 1}月預約</p>
+                    <p className="text-3xl font-bold text-secondary">{stats.monthCount}</p>
+                  </div>
+                  <div className="bg-white rounded-xl p-4 shadow">
+                    <p className="text-sm text-gray-500">{monthStart.getMonth() + 1}月營收</p>
+                    <p className="text-3xl font-bold text-secondary">${stats.monthRevenue.toLocaleString()}</p>
+                  </div>
+                </>
+              )}
+              {statsRange === "lastMonth" && (
+                <>
+                  <div className="bg-white rounded-xl p-4 shadow">
+                    <p className="text-sm text-gray-500">{lastMonthStart.getMonth() + 1}月預約</p>
+                    <p className="text-3xl font-bold text-gray-600">{stats.lastMonthCount}</p>
+                  </div>
+                  <div className="bg-white rounded-xl p-4 shadow">
+                    <p className="text-sm text-gray-500">{lastMonthStart.getMonth() + 1}月營收</p>
+                    <p className="text-3xl font-bold text-gray-600">${stats.lastMonthRevenue.toLocaleString()}</p>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* 技師業績切換按鈕 */}
+            <div className="flex gap-2 mb-4">
+              {([
+                { key: "thisMonth", label: `${monthStart.getMonth() + 1}月` },
+                { key: "lastMonth", label: `${lastMonthStart.getMonth() + 1}月` },
+              ] as const).map((r) => (
+                <button
+                  key={r.key}
+                  onClick={() => setTechStatsRange(r.key)}
+                  className={`px-4 py-2 rounded-lg font-bold transition-colors ${
+                    techStatsRange === r.key
+                      ? "bg-primary text-white"
+                      : "bg-white text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  技師 {r.label} 業績
+                </button>
+              ))}
+            </div>
+
             <div className="bg-white rounded-xl shadow overflow-hidden">
               <table className="w-full">
                 <thead className="bg-accent">
@@ -661,15 +739,19 @@ export default function AdminClient() {
                   </tr>
                 </thead>
                 <tbody>
-                  {techStats.map((t) => (
-                    <tr key={t.nickname} className="border-t">
-                      <td className="px-4 py-3 font-bold">{t.nickname}</td>
-                      <td className="px-4 py-3 text-center">{t.bookings}</td>
-                      <td className="px-4 py-3 text-right font-bold text-primary">
-                        ${t.revenue.toLocaleString()}
-                      </td>
-                    </tr>
-                  ))}
+                  {techStats.map((t) => {
+                    const bookings = techStatsRange === "thisMonth" ? t.thisMonthBookings : t.lastMonthBookings;
+                    const revenue = techStatsRange === "thisMonth" ? t.thisMonthRevenue : t.lastMonthRevenue;
+                    return (
+                      <tr key={t.nickname} className="border-t">
+                        <td className="px-4 py-3 font-bold">{t.nickname}</td>
+                        <td className="px-4 py-3 text-center">{bookings}</td>
+                        <td className="px-4 py-3 text-right font-bold text-primary">
+                          ${revenue.toLocaleString()}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
