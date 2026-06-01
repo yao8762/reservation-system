@@ -648,10 +648,9 @@ export default function AdminClient() {
         {/* ========== STATS TAB ========== */}
         {tab === "stats" && (
           <div>
-            {/* 切換按鈕：今日 / 本月 / 上月 */}
+            {/* 切換按鈕：當月 / 上月 */}
             <div className="flex gap-2 mb-4">
               {([
-                { key: "today", label: "今日" },
                 { key: "thisMonth", label: `${monthStart.getMonth() + 1}月` },
                 { key: "lastMonth", label: `${lastMonthStart.getMonth() + 1}月` },
               ] as const).map((r) => (
@@ -671,19 +670,7 @@ export default function AdminClient() {
 
             {/* 統計卡片 */}
             <div className="grid md:grid-cols-2 gap-4 mb-8">
-              {statsRange === "today" && (
-                <>
-                  <div className="bg-white rounded-xl p-4 shadow">
-                    <p className="text-sm text-gray-500">今日預約</p>
-                    <p className="text-3xl font-bold text-primary">{stats.todayCount}</p>
-                  </div>
-                  <div className="bg-white rounded-xl p-4 shadow">
-                    <p className="text-sm text-gray-500">今日營收</p>
-                    <p className="text-3xl font-bold text-primary">${stats.todayRevenue.toLocaleString()}</p>
-                  </div>
-                </>
-              )}
-              {statsRange === "thisMonth" && (
+              {statsRange === "thisMonth" ? (
                 <>
                   <div className="bg-white rounded-xl p-4 shadow">
                     <p className="text-sm text-gray-500">{monthStart.getMonth() + 1}月預約</p>
@@ -694,8 +681,7 @@ export default function AdminClient() {
                     <p className="text-3xl font-bold text-secondary">${stats.monthRevenue.toLocaleString()}</p>
                   </div>
                 </>
-              )}
-              {statsRange === "lastMonth" && (
+              ) : (
                 <>
                   <div className="bg-white rounded-xl p-4 shadow">
                     <p className="text-sm text-gray-500">{lastMonthStart.getMonth() + 1}月預約</p>
@@ -709,26 +695,9 @@ export default function AdminClient() {
               )}
             </div>
 
-            {/* 技師業績切換按鈕 */}
-            <div className="flex gap-2 mb-4">
-              {([
-                { key: "thisMonth", label: `${monthStart.getMonth() + 1}月` },
-                { key: "lastMonth", label: `${lastMonthStart.getMonth() + 1}月` },
-              ] as const).map((r) => (
-                <button
-                  key={r.key}
-                  onClick={() => setTechStatsRange(r.key)}
-                  className={`px-4 py-2 rounded-lg font-bold transition-colors ${
-                    techStatsRange === r.key
-                      ? "bg-primary text-white"
-                      : "bg-white text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  技師 {r.label} 業績
-                </button>
-              ))}
-            </div>
-
+            <h2 className="text-lg font-bold text-primary mb-4">
+              技師 {statsRange === "thisMonth" ? `${monthStart.getMonth() + 1}月` : `${lastMonthStart.getMonth() + 1}月`}業績
+            </h2>
             <div className="bg-white rounded-xl shadow overflow-hidden">
               <table className="w-full">
                 <thead className="bg-accent">
@@ -740,8 +709,8 @@ export default function AdminClient() {
                 </thead>
                 <tbody>
                   {techStats.map((t) => {
-                    const bookings = techStatsRange === "thisMonth" ? t.thisMonthBookings : t.lastMonthBookings;
-                    const revenue = techStatsRange === "thisMonth" ? t.thisMonthRevenue : t.lastMonthRevenue;
+                    const bookings = statsRange === "thisMonth" ? t.thisMonthBookings : t.lastMonthBookings;
+                    const revenue = statsRange === "thisMonth" ? t.thisMonthRevenue : t.lastMonthRevenue;
                     return (
                       <tr key={t.nickname} className="border-t">
                         <td className="px-4 py-3 font-bold">{t.nickname}</td>
