@@ -389,7 +389,7 @@ export default function BookingClient() {
           (a) =>
             a.technician_id === selectedTech &&
             (a.date === selectedDate ||
-             (a.date === addDays(selectedDate, -1) && parseInt(a.start_time) < 360)),
+             (a.date === addDays(selectedDate, -1) && parseTime(a.start_time) > parseTime(a.end_time))),
         )
       : [];
   const slots = generateSlots(

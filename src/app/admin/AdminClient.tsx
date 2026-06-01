@@ -72,7 +72,10 @@ export default function AdminClient() {
 
   // 動態月份計算（用於標籤顯示和數據查詢）
   const now = new Date();
-  const fetchStartDate = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString().split("T")[0];
+  const fetchStartDate = (() => {
+    const d = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+  })();
 
   const [stats, setStats] = useState({
     todayCount: 0,
@@ -257,7 +260,10 @@ export default function AdminClient() {
 
   async function fetchData() {
     try {
-      const today = new Date().toISOString().split("T")[0];
+      const today = (() => {
+        const t = new Date();
+        return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`;
+      })();
 
       const [allAppointments, techData, svcData, shiftData] = await Promise.all([
         apiFetchAllSafe<any>('appointments', `date=gte.${fetchStartDate}&order=date.asc,start_time.asc`),
@@ -313,8 +319,9 @@ export default function AdminClient() {
       for (let i = 0; i < 6; i++) {
         const mDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const mKey = `${mDate.getFullYear()}-${String(mDate.getMonth() + 1).padStart(2, '0')}`;
-        const mStart = mDate.toISOString().split("T")[0];
-        const mEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 1).toISOString().split("T")[0];
+        const mStart = `${mDate.getFullYear()}-${String(mDate.getMonth() + 1).padStart(2, '0')}-01`;
+        const nextMonthIdx = mDate.getMonth() + 1;
+        const mEnd = `${mDate.getFullYear() + (nextMonthIdx >= 12 ? 1 : 0)}-${String((nextMonthIdx % 12) + 1).padStart(2, '0')}-01`;
         const mApts = (allAppointments || []).filter(
           (a: any) => a.date >= mStart && a.date < mEnd && a.status === "confirmed",
         );
