@@ -36,6 +36,31 @@ export default function ClientsTab({
     }
   }
 
+  async function blockUser(telegramId: string, nickname: string) {
+    if (!telegramId) {
+      alert("此客戶沒有 TG ID，無法封鎖。請在 telegram_users 表手動新增。");
+      return;
+    }
+    if (!confirm(`確定要封鎖這位客戶？\n\nTG ID: ${telegramId}\n暱稱: ${nickname || '(無)'}\n\n封鎖後此客戶將無法預約。`)) return;
+
+
+    // 先 PATCH（如果 tg_users 已有此 ID）
+    await apiFetch(`telegram_users?telegram_id=eq.${telegramId}`, {
+      method: 'PATCH',
+      body: { is_blacklisted: true, note: '管理員從預約紀錄封鎖' },
+    }).catch((e) => console.error('PATCH 失敗，嘗試 POST:', e));
+
+
+    // 再 POST（保險寫入，避免 PATCH 沒這筆資料時漏掉）
+    await apiFetch('telegram_users', {
+      method: 'POST',
+      body: { telegram_id: telegramId, is_blacklisted: true, is_whitelisted: false, note: '管理員從預約紀錄封鎖' },
+    }).catch((e) => console.error('POST 失敗:', e));
+
+
+    alert(`已封鎖 TG ID：${telegramId}\n請到「紀錄黑名單」toggle 確認。`);
+  }
+
   // 狀態 badge
   function getStatusBadge(status: string) {
     switch (status) {
@@ -120,6 +145,7 @@ export default function ClientsTab({
                   <th className="text-left py-2 px-3 font-bold">客戶</th>
                   <th className="text-left py-2 px-3 font-bold">TG ID</th>
                   <th className="text-left py-2 px-3 font-bold">狀態</th>
+                  <th className="text-left py-2 px-3 font-bold">操作</th>
                 </tr>
               </thead>
               <tbody>
@@ -136,6 +162,14 @@ export default function ClientsTab({
                       {a.telegram_id || '-'}
                     </td>
                     <td className="py-2 px-3">{getStatusBadge(a.status)}</td>
+                    <td className="py-2 px-3">
+                      <button
+                        onClick={() => blockUser(String(a.telegram_id || ''), a.client_nickname)}
+                        className="text-red-500 hover:bg-red-50 px-2 py-1 rounded border border-red-200 text-xs"
+                      >
+                        🚫 封鎖
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
