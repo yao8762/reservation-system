@@ -11,23 +11,20 @@ export default function TimeSlotSelect({ value, date, onChange }: TimeSlotSelect
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Generate 48 slots: 00:00 ~ 23:30
-  const allSlots = Array.from({ length: 48 }, (_, i) => {
-    const totalMin = i * 30;
-    const h = Math.floor(totalMin / 60);
-    const m = totalMin % 60;
-    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-  });
+  // Generate 24 slots: 00:00, 01:00, ..., 23:00 (whole hours only)
+  const allSlots = Array.from({ length: 24 }, (_, i) =>
+    `${String(i).padStart(2, "0")}:00`
+  );
 
   // Today's date string
   const today = new Date().toISOString().split("T")[0];
   const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
 
-  // Filter: if selected date === today, hide past slots
+  // Filter: if selected date === today, hide past slots (whole hours only)
   const visibleSlots = allSlots.filter((slot) => {
     if (date !== today) return true;
-    const [sh, sm] = slot.split(":").map(Number);
-    return sh * 60 + sm > nowMin;
+    const hour = parseInt(slot.split(":")[0], 10);
+    return hour * 60 > nowMin;
   });
 
   // Always show at least the next upcoming slot
