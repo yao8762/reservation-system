@@ -64,14 +64,14 @@ export default function ClientsTab({
   const allAppts = appointments || [];
   const clientMap: Record<string, { phone: string; telegram_id?: string; count: number; lastDate: string; appts: any[] }> = {};
   allAppts.forEach((a) => {
-    const phone = a.client_phone;
-    if (!phone) return;
-    if (!clientMap[phone]) {
-      clientMap[phone] = { phone, telegram_id: a.telegram_id, count: 0, lastDate: a.date, appts: [] };
+    const key = a.telegram_id || a.client_phone;
+    if (!key) return;
+    if (!clientMap[key]) {
+      clientMap[key] = { phone: a.client_phone, telegram_id: a.telegram_id, count: 0, lastDate: a.date, appts: [] };
     }
-    clientMap[phone].count++;
-    if (a.date > clientMap[phone].lastDate) clientMap[phone].lastDate = a.date;
-    clientMap[phone].appts.push(a);
+    clientMap[key].count++;
+    if (a.date > clientMap[key].lastDate) clientMap[key].lastDate = a.date;
+    clientMap[key].appts.push(a);
   });
 
   const clients = Object.values(clientMap).sort((a, b) => (a.lastDate > b.lastDate ? -1 : 1));
