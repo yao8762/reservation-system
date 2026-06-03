@@ -1089,18 +1089,6 @@ interface TechModalState {
   specialty: string;
 }
 
-function BookNowButton({ techId }: { techId: string }) {
-  const router = useRouter();
-  return (
-    <button
-      onClick={() => router.push(`/book?tech=${techId}`)}
-      className="mt-2 w-full py-2 rounded-lg bg-accent text-primary font-bold text-sm hover:bg-primary/20 transition-colors"
-    >
-      立即預約
-    </button>
-  );
-}
-
 function TechniciansTab({
   technicians,
   services,
@@ -1190,7 +1178,6 @@ function TechniciansTab({
               <p className="font-bold text-lg text-primary">{t.nickname}</p>
               <p className="text-sm text-gray-600">{t.name}</p>
               <p className="text-sm text-secondary mt-1">{t.specialty}</p>
-              <BookNowButton techId={t.id} />
             </div>
           </div>
         ))}
