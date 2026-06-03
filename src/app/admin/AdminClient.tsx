@@ -67,12 +67,6 @@ export default function AdminClient() {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState<DateRange>("week");
-  const [showAllReservations, setShowAllReservations] = useState(false);
-  const [allReservations, setAllReservations] = useState<Appointment[]>([]);
-  const [allResPage, setAllResPage] = useState(1);
-  const [allResPageSize] = useState(20);
-  const [allResSearch, setAllResSearch] = useState("");
-
 
   // 動態月份計算（用於標籤顯示和數據查詢）
   const now = new Date();
@@ -352,38 +346,6 @@ export default function AdminClient() {
     }
   }
 
-  async function fetchAllReservations() {
-    try {
-      const data = await apiFetchAllSafe<any>('appointments', 'order=date.desc,start_time.desc&limit=200');
-
-      const techMap: Record<string, string> = {};
-      technicians.forEach((t) => { techMap[t.id] = t.nickname; });
-      const svcMap: Record<string, { name: string; price: number; duration_minutes: number }> = {};
-      services.forEach((s) => { svcMap[s.id] = { name: s.name, price: s.price, duration_minutes: s.duration_minutes }; });
-
-      const transformed = (data || []).map((a: any) => ({
-        ...a,
-        technician_nickname: techMap[a.technician_id] || "未知",
-        service_name: svcMap[a.service_id]?.name || "未知",
-        service_duration: svcMap[a.service_id]?.duration_minutes || 60,
-        price: svcMap[a.service_id]?.price || 0,
-      }));
-      setAllReservations(transformed);
-    } catch (e) {
-      console.error("Fetch all reservations error:", e);
-    }
-  }
-
-  function getStatusBadge(status: string) {
-    switch (status) {
-      case "confirmed": return <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">已確認</span>;
-      case "completed": return <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-bold">已完成</span>;
-      case "cancelled": return <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded text-xs font-bold">已取消</span>;
-      case "no_show": return <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs font-bold">未報到</span>;
-      default: return <span className="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-xs font-bold">{status}</span>;
-    }
-  }
-
   async function blockUser(telegramId: string) {
     if (!telegramId || !confirm(`確定要封鎖 TG ID：${telegramId}？`)) return;
     await apiFetch(`telegram_users?telegram_id=eq.${telegramId}`, {
@@ -632,7 +594,7 @@ export default function AdminClient() {
             onClick={() => setTab("customers")}
             className={`px-4 py-2 rounded-lg font-bold transition-colors ${tab === "customers" ? "bg-primary text-white" : "bg-white text-gray-600 hover:bg-gray-100"}`}
           >
-            🚫 客戶管理
+            📋 預約紀錄
           </button>
         </div>
 
@@ -707,9 +669,9 @@ export default function AdminClient() {
                 {(["today", "tomorrow", "week"] as DateRange[]).map((r) => (
                   <button
                     key={r}
-                    onClick={() => { setDateRange(r); setShowAllReservations(false); }}
+                    onClick={() => setDateRange(r)}
                     className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-colors ${
-                      dateRange === r && !showAllReservations
+                      dateRange === r
                         ? "bg-primary text-white"
                         : "bg-white text-gray-600 hover:bg-gray-100"
                     }`}
@@ -722,204 +684,68 @@ export default function AdminClient() {
                   </button>
                 ))}
               </div>
-              <div className="flex gap-2 items-center">
-                {/* All reservations toggle */}
-                <button
-                  onClick={() => {
-                    setShowAllReservations(!showAllReservations);
-                    if (!showAllReservations && allReservations.length === 0) fetchAllReservations();
-                  }}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-colors border ${
-                    showAllReservations
-                      ? "bg-secondary text-white border-secondary"
-                      : "bg-white text-gray-600 border-gray-300 hover:bg-gray-100"
-                  }`}
-                >
-                  {showAllReservations ? "所有預約 ✓" : "所有預約"}
-                </button>
-                <button
-                  onClick={openAddAppt}
-                  className="bg-primary text-white px-4 py-2 rounded-lg font-bold hover:bg-secondary transition-colors"
-                >
-                  ✚ 新增預約
-                </button>
-              </div>
+              <button
+                onClick={openAddAppt}
+                className="bg-primary text-white px-4 py-2 rounded-lg font-bold hover:bg-secondary transition-colors"
+              >
+                ✚ 新增預約
+              </button>
             </div>
 
             {/* Appointment list */}
             <div className="bg-white rounded-xl shadow">
-              {showAllReservations ? (
-                // ===== ALL RESERVATIONS VIEW =====
-                allReservations.length === 0 ? (
-                  <p className="text-center py-8 text-gray-500">載入中...</p>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <div className="flex justify-between items-center px-4 py-2 border-b gap-2">
-                      <input
-                        type="text"
-                        placeholder="搜尋客戶、服務、技師..."
-                        value={allResSearch}
-                        onChange={(e) => {
-                          setAllResSearch(e.target.value);
-                          setAllResPage(1);
-                        }}
-                        className="border rounded-lg px-3 py-1.5 text-sm w-48 focus:outline-none focus:ring-2 focus:ring-primary/50"
-                      />
-                      <span className="text-xs text-gray-400">
-                        {allResSearch ? `搜尋：${allResSearch}` : `共 ${allReservations.length} 筆`}
-                      </span>
-                    </div>
-                    <table className="w-full text-sm">
-                      <thead className="bg-accent">
-                        <tr>
-                          <th className="text-left px-3 py-2 font-bold">TG ID</th>
-                          <th className="text-left px-3 py-2 font-bold">時間</th>
-                          <th className="text-left px-3 py-2 font-bold">服務</th>
-                          <th className="text-left px-3 py-2 font-bold">技師</th>
-                          <th className="text-left px-3 py-2 font-bold">客戶</th>
-                          <th className="text-left px-3 py-2 font-bold">狀態</th>
-                          <th className="text-right px-3 py-2 font-bold">操作</th>
-                        </tr>
-                      </thead>
-                      {(() => {
-                        const filtered = allResSearch
-                          ? allReservations.filter((a) => {
-                              const s = allResSearch.toLowerCase();
-                              return (
-                                (a.client_nickname || '').toLowerCase().includes(s) ||
-                                (a.client_phone || '').includes(s) ||
-                                (a.service_name || '').toLowerCase().includes(s) ||
-                                (a.technician_nickname || '').toLowerCase().includes(s) ||
-                                (a.telegram_id || '').includes(s)
-                              );
-                            })
-                          : allReservations;
-                        const total = filtered.length;
-                        const pages = Math.max(1, Math.ceil(total / allResPageSize));
-                        const start = (allResPage - 1) * allResPageSize;
-                        const pageData = filtered.slice(start, start + allResPageSize);
-                        return (
-                          <>
-                            <tbody>
-                              {pageData.map((apt) => {
-                                const dateObj = new Date(apt.date);
-                                const mmdd = `${String(dateObj.getMonth() + 1).padStart(2, "0")}/${String(dateObj.getDate()).padStart(2, "0")}`;
-                                const timeStr = `${apt.start_time?.slice(0, 5)}`;
-                                return (
-                                  <tr key={apt.id} className="border-t hover:bg-gray-50">
-                                    <td className="px-3 py-2">
-                                      <code className="bg-gray-100 px-1 rounded text-xs">
-                                        {apt.telegram_id || "—"}
-                                      </code>
-                                    </td>
-                                    <td className="px-3 py-2">
-                                      <span className="font-bold text-xs">{mmdd}</span>
-                                      <span className="text-gray-500 text-xs ml-1">{timeStr}</span>
-                                    </td>
-                                    <td className="px-3 py-2">
-                                      <span className="font-bold text-xs">{apt.service_name}</span>
-                                      <span className="text-primary text-xs block">${apt.price}</span>
-                                    </td>
-                                    <td className="px-3 py-2 font-bold text-xs">{apt.technician_nickname}</td>
-                                    <td className="px-3 py-2">
-                                      <span className="text-xs">{apt.client_nickname || "—"}</span>
-                                      <span className="text-gray-400 text-xs block">{apt.client_phone || ""}</span>
-                                    </td>
-                                    <td className="px-3 py-2">{getStatusBadge(apt.status)}</td>
-                                    <td className="px-3 py-2 text-right">
-                                      {apt.telegram_id && (
-                                        <button
-                                          onClick={() => blockUser(apt.telegram_id!)}
-                                          className="text-red-500 hover:bg-red-50 text-xs px-2 py-1 border border-red-200 rounded font-bold"
-                                        >
-                                          🚫 封鎖
-                                        </button>
-                                      )}
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                            <div className="flex justify-center items-center gap-3 px-4 py-2 border-t">
-                              <button
-                                onClick={() => setAllResPage((p) => Math.max(1, p - 1))}
-                                disabled={allResPage === 1}
-                                className="px-3 py-1 rounded-lg border text-xs font-bold disabled:opacity-40 hover:bg-gray-100"
-                              >
-                                ← 上一頁
-                              </button>
-                              <span className="text-xs text-gray-500">
-                                第 {allResPage} / {pages} 頁（共 {total} 筆）
-                              </span>
-                              <button
-                                onClick={() => setAllResPage((p) => Math.min(pages, p + 1))}
-                                disabled={allResPage >= pages}
-                                className="px-3 py-1 rounded-lg border text-xs font-bold disabled:opacity-40 hover:bg-gray-100"
-                              >
-                                下一頁 →
-                              </button>
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </table>
-                  </div>
-                )
+              {getFilteredAppts().length === 0 ? (
+                <p className="text-center py-8 text-gray-500">目前沒有預約</p>
               ) : (
-                // ===== MY RESERVATIONS VIEW (original) =====
-                getFilteredAppts().length === 0 ? (
-                  <p className="text-center py-8 text-gray-500">目前沒有預約</p>
-                ) : (
-                  <div className="space-y-2 p-4">
-                    {getFilteredAppts().map((apt) => (
-                      <div
-                        key={apt.id}
-                        className="bg-gray-50 rounded-lg p-4 flex flex-wrap items-center gap-3 border"
-                      >
-                        <div className="min-w-[100px]">
-                          <p className="font-bold text-sm">
-                            {formatDate(apt.date)}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {apt.start_time?.slice(0, 5)} -{" "}
-                            {apt.end_time?.slice(0, 5)}
-                          </p>
-                        </div>
-                        <div className="min-w-[80px]">
-                          <p className="font-bold text-sm">
-                            {apt.technician_nickname}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {apt.service_name}
-                          </p>
-                          <p className="text-xs text-primary font-bold">
-                            ${apt.price}
-                          </p>
-                        </div>
-                        <div className="flex-1 min-w-[100px]">
-                          <p className="text-sm">{apt.client_nickname}</p>
-                          <p className="text-xs text-gray-500">
-                            {apt.client_phone}
-                          </p>
-                        </div>
-                        <div className="flex gap-2 items-center">
-                          <button
-                            onClick={() => openEditAppt(apt)}
-                            className="text-primary hover:underline text-sm px-2 py-1 border rounded hover:bg-primary/10"
-                          >
-                            編輯
-                          </button>
-                          <button
-                            onClick={() => deleteAppointment(apt.id)}
-                            className="text-red-500 hover:underline text-sm px-2 py-1 border border-red-200 rounded hover:bg-red-50"
-                          >
-                            刪除
-                          </button>
-                        </div>
+                <div className="space-y-2 p-4">
+                  {getFilteredAppts().map((apt) => (
+                    <div
+                      key={apt.id}
+                      className="bg-gray-50 rounded-lg p-4 flex flex-wrap items-center gap-3 border"
+                    >
+                      <div className="min-w-[100px]">
+                        <p className="font-bold text-sm">
+                          {formatDate(apt.date)}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {apt.start_time?.slice(0, 5)} -{" "}
+                          {apt.end_time?.slice(0, 5)}
+                        </p>
                       </div>
-                    ))}
-                  </div>
-                )
+                      <div className="min-w-[80px]">
+                        <p className="font-bold text-sm">
+                          {apt.technician_nickname}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {apt.service_name}
+                        </p>
+                        <p className="text-xs text-primary font-bold">
+                          ${apt.price}
+                        </p>
+                      </div>
+                      <div className="flex-1 min-w-[100px]">
+                        <p className="text-sm">{apt.client_nickname}</p>
+                        <p className="text-xs text-gray-500">
+                          {apt.client_phone}
+                        </p>
+                      </div>
+                      <div className="flex gap-2 items-center">
+                        <button
+                          onClick={() => openEditAppt(apt)}
+                          className="text-primary hover:underline text-sm px-2 py-1 border rounded hover:bg-primary/10"
+                        >
+                          編輯
+                        </button>
+                        <button
+                          onClick={() => deleteAppointment(apt.id)}
+                          className="text-red-500 hover:underline text-sm px-2 py-1 border border-red-200 rounded hover:bg-red-50"
+                        >
+                          刪除
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           </div>
