@@ -745,7 +745,7 @@ export default function AdminClient() {
                         </button>
                         <button
                           onClick={() => deleteAppointment(apt.id)}
-                          className="text-red-500 hover:underline text-sm px-2 py-1 border border-red-200 rounded hover:bg-red-50"
+                          className="text-red-500 hover:underline text-sm px-2 py-1 border border-red-200 rounded-lg hover:bg-red-50"
                         >
                           刪除
                         </button>
@@ -1180,7 +1180,7 @@ function TechniciansTab({
                 </button>
                 <button
                   onClick={() => remove(t.id)}
-                  className="text-red-500 hover:bg-red-50 px-2 py-1 rounded border border-red-200 text-sm"
+                  className="text-red-500 hover:bg-red-50 px-2 py-1 rounded-lg border border-red-200 text-sm"
                 >
                   刪除
                 </button>
@@ -1358,7 +1358,7 @@ function ServicesTab({
                   </button>
                   <button
                     onClick={() => remove(s.id)}
-                    className="text-red-500 hover:bg-red-50 px-3 py-1 border border-red-200 rounded text-sm"
+                    className="text-red-500 hover:bg-red-50 px-3 py-1 border border-red-200 rounded-lg text-sm"
                   >
                     刪除
                   </button>

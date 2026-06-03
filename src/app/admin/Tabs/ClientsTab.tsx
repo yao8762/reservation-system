@@ -165,7 +165,7 @@ export default function ClientsTab({
                     <td className="py-2 px-3">
                       <button
                         onClick={() => blockUser(String(a.telegram_id || ''), a.client_nickname)}
-                        className="text-red-500 hover:bg-red-50 px-2 py-1 rounded border border-red-200 text-xs"
+                        className="text-red-500 hover:bg-red-50 px-2 py-1 rounded-lg border border-red-200 text-xs"
                       >
                         🚫 封鎖
                       </button>
