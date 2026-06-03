@@ -64,11 +64,11 @@ export default function ClientsTab({
   // 狀態 badge
   function getStatusBadge(status: string) {
     switch (status) {
-      case "confirmed": return <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">已確認</span>;
-      case "completed": return <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-bold">已完成</span>;
-      case "cancelled": return <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded text-xs font-bold">已取消</span>;
-      case "no_show": return <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs font-bold">未報到</span>;
-      default: return <span className="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-xs font-bold">{status}</span>;
+      case "confirmed": return <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-lg text-xs font-bold">已確認</span>;
+      case "completed": return <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-lg text-xs font-bold">已完成</span>;
+      case "cancelled": return <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded-lg text-xs font-bold">已取消</span>;
+      case "no_show": return <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded-lg text-xs font-bold">未報到</span>;
+      default: return <span className="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-lg text-xs font-bold">{status}</span>;
     }
   }
 
@@ -99,7 +99,7 @@ export default function ClientsTab({
           <button
             onClick={() => setSubView("all")}
             className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-colors ${
-              subView === "all" ? "bg-primary text-white" : "bg-white border text-gray-600 hover:bg-gray-100"
+              subView === "all" ? "bg-primary text-white" : "bg-white border text-gray-600 hover:bg-gray-50"
             }`}
           >
             📋 所有預約
@@ -107,7 +107,7 @@ export default function ClientsTab({
           <button
             onClick={() => setSubView("blacklist")}
             className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-colors ${
-              subView === "blacklist" ? "bg-primary text-white" : "bg-white border text-gray-600 hover:bg-gray-100"
+              subView === "blacklist" ? "bg-primary text-white" : "bg-white border text-gray-600 hover:bg-gray-50"
             }`}
           >
             🚫 紀錄黑名單
@@ -178,7 +178,7 @@ export default function ClientsTab({
               <button
                 onClick={() => setAllResPage((p) => Math.max(1, p - 1))}
                 disabled={allResPage === 1}
-                className="px-3 py-1 rounded-lg border text-xs font-bold disabled:opacity-40 hover:bg-gray-100"
+                className="px-3 py-1 rounded-lg border text-xs font-bold disabled:opacity-40 hover:bg-gray-50"
               >
                 ← 上一頁
               </button>
@@ -188,7 +188,7 @@ export default function ClientsTab({
               <button
                 onClick={() => setAllResPage((p) => Math.min(pages, p + 1))}
                 disabled={allResPage >= pages}
-                className="px-3 py-1 rounded-lg border text-xs font-bold disabled:opacity-40 hover:bg-gray-100"
+                className="px-3 py-1 rounded-lg border text-xs font-bold disabled:opacity-40 hover:bg-gray-50"
               >
                 下一頁 →
               </button>
@@ -287,7 +287,7 @@ function BlacklistView({ onRefresh }: { onRefresh: () => void }) {
                 <td className="py-2 px-3">
                   <button
                     onClick={() => unblock(tgId)}
-                    className="text-primary hover:bg-primary/10 px-3 py-1 rounded border border-primary/30 text-xs font-bold"
+                    className="text-primary hover:bg-primary/10 px-3 py-1 rounded-lg border border-primary/30 text-xs font-bold"
                   >
                     ✓ 解除封鎖
                   </button>

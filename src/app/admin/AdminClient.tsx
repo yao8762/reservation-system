@@ -569,37 +569,37 @@ export default function AdminClient() {
         <div className="flex gap-2 mb-6">
           <button
             onClick={() => setTab("appointments")}
-            className={`px-4 py-2 rounded-lg font-bold transition-colors ${tab === "appointments" ? "bg-primary text-white" : "bg-white text-gray-600 hover:bg-gray-100"}`}
+            className={`px-4 py-2 rounded-lg font-bold transition-colors ${tab === "appointments" ? "bg-primary text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}
           >
             📋 預約管理
           </button>
           <button
             onClick={() => setTab("schedule")}
-            className={`px-4 py-2 rounded-lg font-bold transition-colors ${tab === "schedule" ? "bg-primary text-white" : "bg-white text-gray-600 hover:bg-gray-100"}`}
+            className={`px-4 py-2 rounded-lg font-bold transition-colors ${tab === "schedule" ? "bg-primary text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}
           >
             📅 排班管理
           </button>
           <button
             onClick={() => setTab("stats")}
-            className={`px-4 py-2 rounded-lg font-bold transition-colors ${tab === "stats" ? "bg-primary text-white" : "bg-white text-gray-600 hover:bg-gray-100"}`}
+            className={`px-4 py-2 rounded-lg font-bold transition-colors ${tab === "stats" ? "bg-primary text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}
           >
             📊 統計報表
           </button>
           <button
             onClick={() => setTab("technicians")}
-            className={`px-4 py-2 rounded-lg font-bold transition-colors ${tab === "technicians" ? "bg-primary text-white" : "bg-white text-gray-600 hover:bg-gray-100"}`}
+            className={`px-4 py-2 rounded-lg font-bold transition-colors ${tab === "technicians" ? "bg-primary text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}
           >
             👥 技師管理
           </button>
           <button
             onClick={() => setTab("services")}
-            className={`px-4 py-2 rounded-lg font-bold transition-colors ${tab === "services" ? "bg-primary text-white" : "bg-white text-gray-600 hover:bg-gray-100"}`}
+            className={`px-4 py-2 rounded-lg font-bold transition-colors ${tab === "services" ? "bg-primary text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}
           >
             🛎️ 服務項目
           </button>
           <button
             onClick={() => setTab("customers")}
-            className={`px-4 py-2 rounded-lg font-bold transition-colors ${tab === "customers" ? "bg-primary text-white" : "bg-white text-gray-600 hover:bg-gray-100"}`}
+            className={`px-4 py-2 rounded-lg font-bold transition-colors ${tab === "customers" ? "bg-primary text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}
           >
             📋 預約紀錄
           </button>
@@ -626,11 +626,11 @@ export default function AdminClient() {
 
             {/* 統計卡片 */}
             <div className="grid md:grid-cols-2 gap-4 mb-8">
-              <div className="bg-white rounded-xl p-4 shadow">
+              <div className="bg-white rounded-lg p-4 shadow">
                 <p className="text-sm text-gray-500">{parseInt(selectedMonth.split('-')[1])}月預約</p>
                 <p className="text-3xl font-bold text-secondary">{(monthlyStats[selectedMonth]?.count ?? 0)}</p>
               </div>
-              <div className="bg-white rounded-xl p-4 shadow">
+              <div className="bg-white rounded-lg p-4 shadow">
                 <p className="text-sm text-gray-500">{parseInt(selectedMonth.split('-')[1])}月營收</p>
                 <p className="text-3xl font-bold text-secondary">${(monthlyStats[selectedMonth]?.revenue ?? 0).toLocaleString()}</p>
               </div>
@@ -639,7 +639,7 @@ export default function AdminClient() {
             <h2 className="text-lg font-bold text-primary mb-4">
               技師 {parseInt(selectedMonth.split('-')[1])}月業績
             </h2>
-            <div className="bg-white rounded-xl shadow overflow-hidden">
+            <div className="bg-white rounded-lg shadow overflow-hidden">
               <table className="w-full">
                 <thead className="bg-accent">
                   <tr>
@@ -680,7 +680,7 @@ export default function AdminClient() {
                     className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-colors ${
                       dateRange === r
                         ? "bg-primary text-white"
-                        : "bg-white text-gray-600 hover:bg-gray-100"
+                        : "bg-white text-gray-600 hover:bg-gray-50"
                     }`}
                   >
                     {r === "today"
@@ -700,7 +700,7 @@ export default function AdminClient() {
             </div>
 
             {/* Appointment list */}
-            <div className="bg-white rounded-xl shadow">
+            <div className="bg-white rounded-lg shadow">
               {getFilteredAppts().length === 0 ? (
                 <p className="text-center py-8 text-gray-500">目前沒有預約</p>
               ) : (
@@ -739,7 +739,7 @@ export default function AdminClient() {
                       <div className="flex gap-2 items-center">
                         <button
                           onClick={() => openEditAppt(apt)}
-                          className="text-primary hover:underline text-sm px-2 py-1 border rounded hover:bg-primary/10"
+                          className="text-primary hover:underline text-sm px-2 py-1 border rounded-lg hover:bg-primary/10"
                         >
                           編輯
                         </button>
@@ -782,7 +782,7 @@ export default function AdminClient() {
             </div>
 
             {/* Calendar Grid */}
-            <div className="bg-white rounded-xl shadow overflow-x-auto mb-8">
+            <div className="bg-white rounded-lg shadow overflow-x-auto mb-8">
               <table className="w-full min-w-[600px]">
                 <thead>
                   <tr>
@@ -1166,7 +1166,7 @@ function TechniciansTab({
       </div>
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
         {technicians.map((t) => (
-          <div key={t.id} className="bg-white rounded-xl p-5 shadow border">
+          <div key={t.id} className="bg-white rounded-lg p-5 shadow border">
             <div className="flex items-start justify-between">
               <div className="w-14 h-14 rounded-full bg-accent flex items-center justify-center text-2xl font-bold text-primary">
                 {t.nickname[0]}
@@ -1174,7 +1174,7 @@ function TechniciansTab({
               <div className="flex gap-2">
                 <button
                   onClick={() => openEdit(t)}
-                  className="text-primary hover:bg-primary/10 px-2 py-1 rounded border border-primary/30 text-sm font-bold"
+                  className="text-primary hover:bg-primary/10 px-2 py-1 rounded-lg border border-primary/30 text-sm font-bold"
                 >
                   編輯
                 </button>
@@ -1333,7 +1333,7 @@ function ServicesTab({
         </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow overflow-hidden">
+      <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="w-full">
           <thead className="bg-accent">
             <tr>
@@ -1352,7 +1352,7 @@ function ServicesTab({
                 <td className="px-4 py-3 text-right flex gap-2 justify-end">
                   <button
                     onClick={() => openEdit(s)}
-                    className="text-primary hover:bg-primary/10 px-3 py-1 border border-primary/30 rounded text-sm font-bold"
+                    className="text-primary hover:bg-primary/10 px-3 py-1 border border-primary/30 rounded-lg text-sm font-bold"
                   >
                     編輯
                   </button>
