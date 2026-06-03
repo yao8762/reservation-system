@@ -71,6 +71,7 @@ export default function AdminClient() {
   const [allReservations, setAllReservations] = useState<Appointment[]>([]);
   const [allResPage, setAllResPage] = useState(1);
   const [allResPageSize] = useState(20);
+  const [allResSearch, setAllResSearch] = useState("");
 
 
   // 動態月份計算（用於標籤顯示和數據查詢）
@@ -753,6 +754,21 @@ export default function AdminClient() {
                   <p className="text-center py-8 text-gray-500">載入中...</p>
                 ) : (
                   <div className="overflow-x-auto">
+                    <div className="flex justify-between items-center px-4 py-2 border-b gap-2">
+                      <input
+                        type="text"
+                        placeholder="搜尋客戶、服務、技師..."
+                        value={allResSearch}
+                        onChange={(e) => {
+                          setAllResSearch(e.target.value);
+                          setAllResPage(1);
+                        }}
+                        className="border rounded-lg px-3 py-1.5 text-sm w-48 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      />
+                      <span className="text-xs text-gray-400">
+                        {allResSearch ? `搜尋：${allResSearch}` : `共 ${allReservations.length} 筆`}
+                      </span>
+                    </div>
                     <table className="w-full text-sm">
                       <thead className="bg-accent">
                         <tr>
@@ -766,10 +782,22 @@ export default function AdminClient() {
                         </tr>
                       </thead>
                       {(() => {
-                        const total = allReservations.length;
+                        const filtered = allResSearch
+                          ? allReservations.filter((a) => {
+                              const s = allResSearch.toLowerCase();
+                              return (
+                                (a.client_nickname || '').toLowerCase().includes(s) ||
+                                (a.client_phone || '').includes(s) ||
+                                (a.service_name || '').toLowerCase().includes(s) ||
+                                (a.technician_nickname || '').toLowerCase().includes(s) ||
+                                (a.telegram_id || '').includes(s)
+                              );
+                            })
+                          : allReservations;
+                        const total = filtered.length;
                         const pages = Math.max(1, Math.ceil(total / allResPageSize));
                         const start = (allResPage - 1) * allResPageSize;
-                        const pageData = allReservations.slice(start, start + allResPageSize);
+                        const pageData = filtered.slice(start, start + allResPageSize);
                         return (
                           <>
                             <tbody>
