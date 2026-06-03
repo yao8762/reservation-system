@@ -29,7 +29,7 @@ export default function ClientsTab({
   async function fetchAllReservations() {
     setLoading(true);
     try {
-      const data = await apiFetchAllSafe<any>('appointments', 'order=date.desc,start_time.desc&limit=200');
+      const data = await apiFetchAllSafe<any>('appointments', 'select=id,date,start_time,end_time,status,client_nickname,client_phone,telegram_id,technician_id,service_id,technicians(nickname),services(name)&order=date.desc,start_time.desc&limit=200');
       setAllReservations(data || []);
     } finally {
       setLoading(false);
@@ -79,8 +79,8 @@ export default function ClientsTab({
         return (
           (a.client_nickname || '').toLowerCase().includes(s) ||
           (a.client_phone || '').includes(s) ||
-          (a.service_name || '').toLowerCase().includes(s) ||
-          (a.technician_nickname || '').toLowerCase().includes(s) ||
+          (a.services?.name || '').toLowerCase().includes(s) ||
+          (a.technicians?.nickname || '').toLowerCase().includes(s) ||
           (a.telegram_id || '').includes(s)
         );
       })
@@ -153,8 +153,8 @@ export default function ClientsTab({
                   <tr key={a.id} className="border-t hover:bg-gray-50">
                     <td className="py-2 px-3">{a.date}</td>
                     <td className="py-2 px-3">{a.start_time}</td>
-                    <td className="py-2 px-3">{a.service_name}</td>
-                    <td className="py-2 px-3">{a.technician_nickname}</td>
+                    <td className="py-2 px-3">{a.services?.name || '-'}</td>
+                    <td className="py-2 px-3">{a.technicians?.nickname || '-'}</td>
                     <td className="py-2 px-3">
                       {a.client_nickname || a.client_phone}
                     </td>
