@@ -28,7 +28,7 @@ export default function ClientsTab({
   async function fetchAllReservations() {
     setLoading(true);
     try {
-      const data = await apiFetchAllSafe<any>('appointments', 'order=date.desc,time_slot.asc&limit=200');
+      const data = await apiFetchAllSafe<any>('appointments', 'order=date.desc,start_time.desc&limit=200');
       setAllReservations(data || []);
     } finally {
       setLoading(false);
@@ -106,7 +106,7 @@ export default function ClientsTab({
                 {pageData.map((a) => (
                   <tr key={a.id} className="border-t hover:bg-gray-50">
                     <td className="py-2 px-3">{a.date}</td>
-                    <td className="py-2 px-3">{a.time_slot}</td>
+                    <td className="py-2 px-3">{a.start_time}</td>
                     <td className="py-2 px-3">{a.service_name}</td>
                     <td className="py-2 px-3">{a.technician_nickname}</td>
                     <td className="py-2 px-3">
