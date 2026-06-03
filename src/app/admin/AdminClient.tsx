@@ -421,20 +421,27 @@ export default function AdminClient() {
         prefer: 'return=minimal',
       }).catch(() => {});
     } else {
-      await apiFetch('appointments', {
-        method: 'POST',
-        body: {
-          technician_id: apptTech,
-          service_id: apptSvc,
-          date: apptDate,
-          start_time: apptTime,
-          end_time: endTime,
-          client_nickname: apptClient,
-          client_phone: apptPhone,
-          status: 'confirmed',
-        },
-        prefer: 'return=representation',
-      }).catch(() => {});
+      try {
+        await apiFetch('appointments', {
+          method: 'POST',
+          body: {
+            technician_id: apptTech,
+            service_id: apptSvc,
+            date: apptDate,
+            start_time: apptTime,
+            end_time: endTime,
+            client_nickname: apptClient,
+            client_phone: apptPhone,
+            telegram_id: null,  // 明確標示管理員手動加的
+            status: 'confirmed',
+          },
+          prefer: 'return=representation',
+        });
+      } catch (e: any) {
+        console.error('新增預約失敗:', e);
+        alert('新增預約失敗：' + (e?.message || '未知錯誤'));
+        return;  // 不要關 modal、不要 fetchData
+      }
     }
     setShowApptModal(false);
     fetchData();
