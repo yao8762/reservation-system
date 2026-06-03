@@ -759,7 +759,7 @@ export default function AdminClient() {
                           <th className="text-left px-3 py-2 font-bold">服務</th>
                           <th className="text-left px-3 py-2 font-bold">技師</th>
                           <th className="text-left px-3 py-2 font-bold">客戶</th>
-
+                          <th className="text-left px-3 py-2 font-bold">狀態</th>
                           <th className="text-right px-3 py-2 font-bold">操作</th>
                         </tr>
                       </thead>
@@ -788,7 +788,7 @@ export default function AdminClient() {
                                 <span className="text-xs">{apt.client_nickname || "—"}</span>
                                 <span className="text-gray-400 text-xs block">{apt.client_phone || ""}</span>
                               </td>
-
+                              <td className="px-3 py-2">{getStatusBadge(apt.status)}</td>
                               <td className="px-3 py-2 text-right">
                                 {apt.telegram_id && (
                                   <button
