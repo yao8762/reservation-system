@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import TimeSlotSelect from "@/components/TimeSlotSelect";
+import ClientsTab from "./Tabs/ClientsTab";
 import { supabase } from "@/lib/supabase";
 import { apiFetch, apiFetchAllSafe } from "@/lib/api";
 
@@ -46,7 +47,7 @@ interface Shift {
   end_date?: string;
 }
 
-type Tab = "appointments" | "schedule" | "stats" | "technicians" | "blacklist" | "services";
+type Tab = "appointments" | "schedule" | "stats" | "technicians" | "customers" | "services";
 type DateRange = "today" | "tomorrow" | "week";
 
 function formatDate(d: string) {
@@ -625,8 +626,8 @@ export default function AdminClient() {
             🛎️ 服務項目
           </button>
           <button
-            onClick={() => setTab("blacklist")}
-            className={`px-4 py-2 rounded-lg font-bold transition-colors ${tab === "blacklist" ? "bg-primary text-white" : "bg-white text-gray-600 hover:bg-gray-100"}`}
+            onClick={() => setTab("customers")}
+            className={`px-4 py-2 rounded-lg font-bold transition-colors ${tab === "customers" ? "bg-primary text-white" : "bg-white text-gray-600 hover:bg-gray-100"}`}
           >
             🚫 客戶管理
           </button>
@@ -1175,9 +1176,9 @@ export default function AdminClient() {
           />
         )}
 
-        {/* ========== BLACKLIST TAB ========== */}
-        {tab === "blacklist" && (
-          <BlacklistTab
+        {/* ========== CUSTOMERS TAB ========== */}
+        {tab === "customers" && (
+          <ClientsTab
             appointments={appointments}
             technicians={technicians}
             onRefresh={fetchData}
@@ -1547,34 +1548,6 @@ function ServicesTab({
   )
 }
 
-// ======= Blacklist Tab =======
-// 預約不再需要審核，直接 confirmed
-// 管理員可看到所有已預約客戶資料（TG ID、預約技師、時段）
-// 可以將慣性放鴿子的客戶加入黑名單或解除
-function BlacklistTab({
-  appointments,
-  technicians,
-  onRefresh,
-}: {
-  appointments: any[];
-  technicians: any[];
-  onRefresh: () => void;
-}) {
-  const [blacklist, setBlacklist] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchBlacklist();
-  }, []);
-
-  async function fetchBlacklist() {
-    setLoading(true);
-    try {
-      const data = await apiFetchAllSafe<any>('telegram_users', 'is_blacklisted=eq.true&order=created_at.desc');
-      setBlacklist(data || []);
-    } finally {
-      setLoading(false);
-    }
   }
 
   async function addToBlacklist(telegramId: string, note: string) {

@@ -406,6 +406,21 @@ export default function BookingClient() {
       return;
     }
 
+    // 黑名單檢查：防止已封鎖 TG ID 繞過（更換電話預約）
+    const telegramId = sessionStorage.getItem("telegram_id");
+    if (telegramId) {
+      try {
+        const res = await fetch(`/api/check-blacklist?telegram_id=${encodeURIComponent(telegramId)}`);
+        const data = await res.json();
+        if (data.blacklisted) {
+          setMessage("❌ 您的帳號已被封鎖，請聯繫我們");
+          return;
+        }
+      } catch {
+        // 檢查失敗時寬容，不阻擋預約
+      }
+    }
+
     setSubmitting(true);
     setMessage("");
     try {
