@@ -69,6 +69,8 @@ export default function AdminClient() {
   const [dateRange, setDateRange] = useState<DateRange>("week");
   const [showAllReservations, setShowAllReservations] = useState(false);
   const [allReservations, setAllReservations] = useState<Appointment[]>([]);
+  const [allResPage, setAllResPage] = useState(1);
+  const [allResPageSize] = useState(20);
 
 
   // 動態月份計算（用於標籤顯示和數據查詢）
@@ -763,46 +765,75 @@ export default function AdminClient() {
                           <th className="text-right px-3 py-2 font-bold">操作</th>
                         </tr>
                       </thead>
-                      <tbody>
-                        {allReservations.map((apt) => {
-                          const dateObj = new Date(apt.date);
-                          const mmdd = `${String(dateObj.getMonth() + 1).padStart(2, "0")}/${String(dateObj.getDate()).padStart(2, "0")}`;
-                          const timeStr = `${apt.start_time?.slice(0, 5)}`;
-                          return (
-                            <tr key={apt.id} className="border-t hover:bg-gray-50">
-                              <td className="px-3 py-2">
-                                <code className="bg-gray-100 px-1 rounded text-xs">
-                                  {apt.telegram_id || "—"}
-                                </code>
-                              </td>
-                              <td className="px-3 py-2">
-                                <span className="font-bold text-xs">{mmdd}</span>
-                                <span className="text-gray-500 text-xs ml-1">{timeStr}</span>
-                              </td>
-                              <td className="px-3 py-2">
-                                <span className="font-bold text-xs">{apt.service_name}</span>
-                                <span className="text-primary text-xs block">${apt.price}</span>
-                              </td>
-                              <td className="px-3 py-2 font-bold text-xs">{apt.technician_nickname}</td>
-                              <td className="px-3 py-2">
-                                <span className="text-xs">{apt.client_nickname || "—"}</span>
-                                <span className="text-gray-400 text-xs block">{apt.client_phone || ""}</span>
-                              </td>
-                              <td className="px-3 py-2">{getStatusBadge(apt.status)}</td>
-                              <td className="px-3 py-2 text-right">
-                                {apt.telegram_id && (
-                                  <button
-                                    onClick={() => blockUser(apt.telegram_id!)}
-                                    className="text-red-500 hover:bg-red-50 text-xs px-2 py-1 border border-red-200 rounded font-bold"
-                                  >
-                                    🚫 封鎖
-                                  </button>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
+                      {(() => {
+                        const total = allReservations.length;
+                        const pages = Math.max(1, Math.ceil(total / allResPageSize));
+                        const start = (allResPage - 1) * allResPageSize;
+                        const pageData = allReservations.slice(start, start + allResPageSize);
+                        return (
+                          <>
+                            <tbody>
+                              {pageData.map((apt) => {
+                                const dateObj = new Date(apt.date);
+                                const mmdd = `${String(dateObj.getMonth() + 1).padStart(2, "0")}/${String(dateObj.getDate()).padStart(2, "0")}`;
+                                const timeStr = `${apt.start_time?.slice(0, 5)}`;
+                                return (
+                                  <tr key={apt.id} className="border-t hover:bg-gray-50">
+                                    <td className="px-3 py-2">
+                                      <code className="bg-gray-100 px-1 rounded text-xs">
+                                        {apt.telegram_id || "—"}
+                                      </code>
+                                    </td>
+                                    <td className="px-3 py-2">
+                                      <span className="font-bold text-xs">{mmdd}</span>
+                                      <span className="text-gray-500 text-xs ml-1">{timeStr}</span>
+                                    </td>
+                                    <td className="px-3 py-2">
+                                      <span className="font-bold text-xs">{apt.service_name}</span>
+                                      <span className="text-primary text-xs block">${apt.price}</span>
+                                    </td>
+                                    <td className="px-3 py-2 font-bold text-xs">{apt.technician_nickname}</td>
+                                    <td className="px-3 py-2">
+                                      <span className="text-xs">{apt.client_nickname || "—"}</span>
+                                      <span className="text-gray-400 text-xs block">{apt.client_phone || ""}</span>
+                                    </td>
+                                    <td className="px-3 py-2">{getStatusBadge(apt.status)}</td>
+                                    <td className="px-3 py-2 text-right">
+                                      {apt.telegram_id && (
+                                        <button
+                                          onClick={() => blockUser(apt.telegram_id!)}
+                                          className="text-red-500 hover:bg-red-50 text-xs px-2 py-1 border border-red-200 rounded font-bold"
+                                        >
+                                          🚫 封鎖
+                                        </button>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                            <div className="flex justify-center items-center gap-3 px-4 py-2 border-t">
+                              <button
+                                onClick={() => setAllResPage((p) => Math.max(1, p - 1))}
+                                disabled={allResPage === 1}
+                                className="px-3 py-1 rounded-lg border text-xs font-bold disabled:opacity-40 hover:bg-gray-100"
+                              >
+                                ← 上一頁
+                              </button>
+                              <span className="text-xs text-gray-500">
+                                第 {allResPage} / {pages} 頁（共 {total} 筆）
+                              </span>
+                              <button
+                                onClick={() => setAllResPage((p) => Math.min(pages, p + 1))}
+                                disabled={allResPage >= pages}
+                                className="px-3 py-1 rounded-lg border text-xs font-bold disabled:opacity-40 hover:bg-gray-100"
+                              >
+                                下一頁 →
+                              </button>
+                            </div>
+                          </>
+                        );
+                      })()}
                     </table>
                   </div>
                 )
