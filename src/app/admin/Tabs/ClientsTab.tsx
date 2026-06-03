@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { apiFetchAllSafe } from "@/lib/api";
+import { apiFetch, apiFetchAllSafe } from "@/lib/api";
 import type { Technician } from "../types";
 
 // 顯示所有預約紀錄（含搜尋、分頁、狀態 badge）
@@ -15,6 +15,7 @@ export default function ClientsTab({
   technicians: Technician[];
   onRefresh: () => void;
 }) {
+  const [subView, setSubView] = useState<"all" | "blacklist">("all");
   const [allReservations, setAllReservations] = useState<any[]>([]);
   const [allResPage, setAllResPage] = useState(1);
   const [allResPageSize] = useState(20);
@@ -69,7 +70,26 @@ export default function ClientsTab({
       <div className="p-4 border-b">
         <h2 className="text-lg font-bold">預約紀錄</h2>
         <p className="text-xs text-gray-500">所有客戶的預約紀錄，可搜尋客戶/服務/技師/TG ID</p>
+        <div className="flex gap-2 mt-2">
+          <button
+            onClick={() => setSubView("all")}
+            className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-colors ${
+              subView === "all" ? "bg-primary text-white" : "bg-white border text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            📋 所有預約
+          </button>
+          <button
+            onClick={() => setSubView("blacklist")}
+            className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-colors ${
+              subView === "blacklist" ? "bg-primary text-white" : "bg-white border text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            🚫 紀錄黑名單
+          </button>
+        </div>
       </div>
+      {subView === "all" && (
       <div className="p-4">
         {loading ? (
           <p className="text-center py-8 text-gray-500">載入中...</p>
@@ -142,6 +162,107 @@ export default function ClientsTab({
           </div>
         )}
       </div>
+      )}
+      {subView === "blacklist" && <BlacklistView onRefresh={onRefresh} />}
+    </div>
+  );
+}
+
+function BlacklistView({ onRefresh }: { onRefresh: () => void }) {
+  const [blacklist, setBlacklist] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [nicknameMap, setNicknameMap] = useState<Record<string, { nickname: string; phone: string }>>({});
+
+  useEffect(() => {
+    fetchBlacklist();
+  }, []);
+
+  async function fetchBlacklist() {
+    setLoading(true);
+    try {
+      const data = await apiFetchAllSafe<any>('telegram_users', 'is_blacklisted=eq.true&order=created_at.desc');
+      setBlacklist(data || []);
+
+      // 對每個黑名單 TG ID 查最新一筆預約拿暱稱/電話
+      const tgIds = (data || []).map((b: any) => b.telegram_id).filter(Boolean);
+      if (tgIds.length > 0) {
+        const inClause = `telegram_id=in.(${tgIds.join(',')})&select=client_nickname,client_phone,telegram_id,date&order=date.desc&limit=200`;
+        const appts = await apiFetchAllSafe<any>('appointments', inClause);
+        const map: Record<string, { nickname: string; phone: string }> = {};
+        (appts || []).forEach((a: any) => {
+          if (a.telegram_id && !map[a.telegram_id]) {
+            map[a.telegram_id] = { nickname: a.client_nickname, phone: a.client_phone };
+          }
+        });
+        setNicknameMap(map);
+      } else {
+        setNicknameMap({});
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function unblock(telegramId: string) {
+    if (!confirm(`確定要解除封鎖 TG ID：${telegramId}？`)) return;
+    await apiFetch(`telegram_users?telegram_id=eq.${telegramId}`, {
+      method: 'PATCH',
+      body: { is_blacklisted: false },
+    }).catch((e) => {
+      console.error('解封鎖失敗:', e);
+      alert('解封鎖失敗，請稍後再試');
+    });
+    alert(`已解除封鎖 TG ID：${telegramId}`);
+    fetchBlacklist();
+    onRefresh();
+  }
+
+  if (loading) {
+    return <p className="text-center py-8 text-gray-500">載入中...</p>;
+  }
+
+  if (blacklist.length === 0) {
+    return (
+      <div className="text-center py-12 text-gray-400">
+        <p className="text-2xl mb-2">🛡️</p>
+        <p className="text-sm">目前沒有黑名單紀錄</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead className="bg-accent">
+          <tr>
+            <th className="text-left py-2 px-3 font-bold">TG ID</th>
+            <th className="text-left py-2 px-3 font-bold">暱稱</th>
+            <th className="text-left py-2 px-3 font-bold">電話</th>
+            <th className="text-left py-2 px-3 font-bold">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {blacklist.map((b) => {
+            const tgId = b.telegram_id;
+            const info = nicknameMap[tgId] || { nickname: '-', phone: '-' };
+            return (
+              <tr key={b.id} className="border-t hover:bg-gray-50">
+                <td className="py-2 px-3 text-xs text-gray-500">{tgId}</td>
+                <td className="py-2 px-3">{info.nickname}</td>
+                <td className="py-2 px-3">{info.phone}</td>
+                <td className="py-2 px-3">
+                  <button
+                    onClick={() => unblock(tgId)}
+                    className="text-primary hover:bg-primary/10 px-3 py-1 rounded border border-primary/30 text-xs font-bold"
+                  >
+                    ✓ 解除封鎖
+                  </button>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
