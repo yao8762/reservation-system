@@ -58,7 +58,7 @@ export default function ClientsTab({
     }).catch((e) => console.error('POST 失敗:', e));
 
 
-    alert(`已封鎖 TG ID：${telegramId}\n請到「紀錄黑名單」toggle 確認。`);
+    alert(`已封鎖 TG ID：${telegramId}\n請到「黑名單」確認。`);
   }
 
   // 狀態 badge
@@ -110,7 +110,7 @@ export default function ClientsTab({
               subView === "blacklist" ? "bg-primary text-white" : "bg-white border text-gray-600 hover:bg-gray-50"
             }`}
           >
-            🚫 紀錄黑名單
+            🚫 黑名單
           </button>
         </div>
       </div>
