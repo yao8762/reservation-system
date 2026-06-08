@@ -2,6 +2,23 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+### 1. 環境設定（必做）
+
+複製 `.env.example` 為 `.env.local`，然後把值填上：
+
+```bash
+cp .env.example .env.local
+# 然後用編輯器把 .env.local 裡的 placeholder 改成你的真實值
+```
+
+需要的環境變數分兩類：
+- **Server-only（敏感）**：`SUPABASE_SERVICE_ROLE_KEY` / `TELEGRAM_BOT_TOKEN` / `TELEGRAM_SECRET` / `TELEGRAM_ADMIN_ID` / `ADMIN_PASSWORD`
+- **Client + Server**：`NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` / `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME` / `NEXT_PUBLIC_SITE_URL` + 主題色 + 班別時段
+
+完整說明都在 `.env.example` 註解裡。
+
+### 2. 啟動開發伺服器
+
 First, run the development server:
 
 ```bash
