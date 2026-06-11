@@ -132,7 +132,7 @@ export default function ScheduleTab({
             setSchedEndTime("17:00");
             setSchedStartDate(todayStr);
             setSchedEndDate("");
-            setSchedAllowPastTime(false); // 新增班表按鈕：過濾過去時間
+            setSchedAllowPastTime(true); // 新增班表按鈕：允許所有時間
             setShowSchedModal(true);
           }}
           className="bg-primary text-white px-4 py-2 rounded-lg font-bold hover:bg-secondary transition-colors"
