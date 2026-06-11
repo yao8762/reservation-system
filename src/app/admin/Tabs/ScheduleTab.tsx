@@ -46,6 +46,8 @@ export default function ScheduleTab({
   const [schedEndTime, setSchedEndTime] = useState("17:00");
   const [schedStartDate, setSchedStartDate] = useState("");
   const [schedEndDate, setSchedEndDate] = useState("");
+  // When true, TimeSlotSelect shows all slots (cell + clicked); when false, past slots filtered (新增班表 button)
+  const [schedAllowPastTime, setSchedAllowPastTime] = useState(false);
 
   function getCalendarDays(): string[] {
     const days: string[] = [];
@@ -130,6 +132,7 @@ export default function ScheduleTab({
             setSchedEndTime("17:00");
             setSchedStartDate(todayStr);
             setSchedEndDate("");
+            setSchedAllowPastTime(false); // 新增班表按鈕：過濾過去時間
             setShowSchedModal(true);
           }}
           className="bg-primary text-white px-4 py-2 rounded-lg font-bold hover:bg-secondary transition-colors"
@@ -199,6 +202,7 @@ export default function ScheduleTab({
                             setSchedEndTime("17:00");
                             setSchedStartDate(day);
                             setSchedEndDate(day);
+                            setSchedAllowPastTime(true); // cell +：允許所有時間
                             setShowSchedModal(true);
                           }}
                           className="w-full h-full py-2 text-xs text-gray-300 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors"
@@ -248,6 +252,7 @@ export default function ScheduleTab({
                     value={schedStartTime}
                     date={schedStartDate}
                     onChange={(t) => setSchedStartTime(t)}
+                    allowPastTime={schedAllowPastTime}
                   />
                 </div>
                 <div className="flex-1">
@@ -258,6 +263,7 @@ export default function ScheduleTab({
                     value={schedEndTime}
                     date={schedEndDate || schedStartDate}
                     onChange={(t) => setSchedEndTime(t)}
+                    allowPastTime={schedAllowPastTime}
                   />
                 </div>
               </div>

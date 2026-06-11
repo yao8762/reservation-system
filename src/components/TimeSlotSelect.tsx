@@ -5,6 +5,8 @@ interface TimeSlotSelectProps {
   value: string;
   date: string;
   onChange: (time: string) => void;
+  /** When true, show all slots including past ones (for cell + clicks) */
+  allowPastTime?: boolean;
 }
 
 export default function TimeSlotSelect({ value, date, onChange }: TimeSlotSelectProps) {
@@ -20,8 +22,9 @@ export default function TimeSlotSelect({ value, date, onChange }: TimeSlotSelect
   const today = new Date().toISOString().split("T")[0];
   const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
 
-  // Filter: if selected date === today, hide past slots (whole hours only)
+  // Filter: if selected date === today AND allowPastTime is false, hide past slots
   const visibleSlots = allSlots.filter((slot) => {
+    if (allowPastTime) return true;
     if (date !== today) return true;
     const hour = parseInt(slot.split(":")[0], 10);
     return hour * 60 > nowMin;
