@@ -27,8 +27,11 @@ export default function TimeSlotSelect({ value, date, onChange }: TimeSlotSelect
     return hour * 60 > nowMin;
   });
 
-  // Always show at least the next upcoming slot
-  const displaySlots = visibleSlots.length > 0 ? visibleSlots : allSlots.slice(-1);
+  // Fallback: if all slots filtered out, use last slot and clear stale value
+  const fallbackSlot = allSlots[allSlots.length - 1]; // "23:00"
+  const displaySlots = visibleSlots.length > 0 ? visibleSlots : [fallbackSlot];
+  // If current value is not in visible slots and we're on today, reset to fallback
+  const effectiveValue = (date === today && !visibleSlots.includes(value)) ? fallbackSlot : value;
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -41,7 +44,7 @@ export default function TimeSlotSelect({ value, date, onChange }: TimeSlotSelect
   }, []);
 
   // Determine display label
-  const label = value || "請選擇時間";
+  const label = effectiveValue || "請選擇時間";
 
   return (
     <div ref={ref} className="relative">
@@ -68,7 +71,7 @@ export default function TimeSlotSelect({ value, date, onChange }: TimeSlotSelect
                 key={slot}
                 type="button"
                 onClick={() => { onChange(slot); setOpen(false); }}
-                className={`w-full px-4 py-2 text-left text-sm hover:bg-primary/10 transition-colors ${slot === value ? "bg-primary/10 text-primary font-bold" : "text-gray-700"}`}
+                className={`w-full px-4 py-2 text-left text-sm hover:bg-primary/10 transition-colors ${slot === effectiveValue ? "bg-primary/10 text-primary font-bold" : "text-gray-700"}`}
               >
                 {slot}
               </button>

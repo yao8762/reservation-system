@@ -74,6 +74,18 @@ export default function ScheduleTab({
   async function addShiftBulk() {
     if (!schedTech || !schedStartTime || !schedEndTime || !schedStartDate)
       return;
+
+    // Warn if start time is already past today
+    const today = getToday();
+    if (schedStartDate === today) {
+      const nowH = new Date().getHours();
+      const startH = parseInt(schedStartTime.split(":")[0], 10);
+      if (startH < nowH) {
+        const confirmed = confirm(`⚠️ 開始時間 ${schedStartTime} 已過了（現在是 ${String(nowH).padStart(2, "0")}:00），確定要新增嗎？`);
+        if (!confirmed) return;
+      }
+    }
+
     const end = schedEndDate || schedStartDate;
     const startD = new Date(schedStartDate);
     const endD = new Date(end);
